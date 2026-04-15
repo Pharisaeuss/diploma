@@ -9,15 +9,15 @@ resource "aws_launch_template" "app_lt" {
     name = aws_iam_instance_profile.ec2_s3_profile.name
   }
 
-  user_data = base64encode(<<-EOF
-                #!/bin/bash
-                yum update -y
-                yum install httpd -y
-                service httpd start
-                chkconfig httpd on
-                echo "<html><h1>Hello World</h1></html>" > /var/www/html/index.html
-              EOF
-  )
+  # user_data = base64encode(<<-EOF
+  #               #!/bin/bash
+  #               yum update -y
+  #               yum install httpd -y
+  #               service httpd start
+  #               chkconfig httpd on
+  #               echo "<html><h1>Hello World</h1></html>" > /var/www/html/index.html
+  #             EOF
+  # )
   tag_specifications {
     resource_type = "instance"
     tags = {

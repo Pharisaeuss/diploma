@@ -7,9 +7,9 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "tfstate-bucket-backup2026"
-    key            = "terraform/terraform.tfstate"
-
+    bucket       = "tfstate-buckets3-2026"
+    key          = "terraform/terraform.tfstate"
+    region       = "eu-central-1"
     use_lockfile = true
   }
 }

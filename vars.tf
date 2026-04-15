@@ -33,7 +33,7 @@ variable "machine_type" {
 variable "image" {
   description = "type of image for instnces"
   type        = string
-  default     = "al2023-ami-*-x86_64"
+  default     = "al2023-ami-2023*-x86_64"
 }
 
 variable "env" {

@@ -104,3 +104,42 @@ resource "aws_security_group" "eice_sg" {
     security_groups = [aws_security_group.asg_sg.id]
   }
 }
+
+# 1-ша виділена підмережа для БД (Zone A)
+resource "aws_subnet" "db_private_1" {
+  vpc_id            = data.aws_vpc.default.id
+  cidr_block        = "172.31.203.0/24"
+  availability_zone = data.aws_availability_zones.available.names[0]
+  
+  tags = { Name = "Subnet-DB-Tier-1-${var.env}" }
+}
+
+# 2-га виділена підмережа для БД (Zone B)
+resource "aws_subnet" "db_private_2" {
+  vpc_id            = data.aws_vpc.default.id
+  cidr_block        = "172.31.204.0/24"
+  availability_zone = data.aws_availability_zones.available.names[1]
+  
+  tags = { Name = "Subnet-DB-Tier-2-${var.env}" }
+}
+
+# Security Group для PostgreSQL
+resource "aws_security_group" "rds_sg" {
+  name        = "rds-security-group-${var.env}"
+  description = "Allow PostgreSQL traffic from ASG instances only"
+  vpc_id      = data.aws_vpc.default.id
+
+  ingress {
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.asg_sg.id] 
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}

@@ -40,3 +40,15 @@ variable "env" {
   description = "Environment to deploy"
   type        = string
 }
+
+variable "db_username" {
+  description = "Username for the PostgreSQL database"
+  type        = string
+  default     = "conduit_admin"
+}
+
+variable "db_password" {
+  description = "Password for the PostgreSQL database"
+  type        = string
+  sensitive   = true 
+}

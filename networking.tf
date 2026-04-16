@@ -143,3 +143,28 @@ resource "aws_security_group" "rds_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+
+
+# Окрема Security Group для ендпоінтів
+resource "aws_security_group" "ssm_endpoints_sg" {
+  name        = "ssm-endpoints-sg-${var.env}"
+  description = "Security group for SSM Interface Endpoints"
+  vpc_id      = data.aws_vpc.default.id
+
+  # Дозволяємо вхідний HTTPS (443) ТІЛЬКИ від наших серверів 
+  ingress {
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.asg_sg.id]
+  }
+
+  # Вихідний трафік для ендпоінтів
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}

@@ -43,3 +43,21 @@ resource "aws_ec2_instance_connect_endpoint" "private_connect" {
     Name = "private-eice-endpoint"
   }
 }
+
+
+
+# Список необхідних сервісів для роботи SSM без інтернету
+locals {
+  ssm_services = ["ssm", "ssmmessages", "ec2messages"]
+}
+
+resource "aws_vpc_endpoint" "ssm_endpoints" {
+  for_each            = toset(local.ssm_services)
+  vpc_id              = data.aws_vpc.default.id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.${each.value}"
+  vpc_endpoint_type   = "Interface"
+  
+  subnet_ids          = [aws_subnet.custom_asg_subnet.id]
+  security_group_ids  = [aws_security_group.ssm_endpoints_sg.id] 
+  private_dns_enabled = true
+}

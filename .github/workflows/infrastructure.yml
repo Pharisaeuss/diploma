@@ -42,18 +42,18 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: "1.5.0" 
+          terraform_version: "1.14.5" 
 
       - name: Terraform Init
         run: terraform init
 
-      - name: Terraform Format
+      - name: Format Check
         run: terraform fmt -check
 
-      - name: Terraform Validate
+      - name: Validate Code
         run: terraform validate
 
-      - name: Terraform Plan
+      - name: Plan
         id: plan
         run: terraform plan -input=false
 

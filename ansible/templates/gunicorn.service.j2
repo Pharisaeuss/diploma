@@ -1,0 +1,17 @@
+[Unit]
+Description=Gunicorn daemon for Flask Application (Conduit)
+After=network.target
+
+[Service]
+# Запускаємо від імені root, оскільки папка /var/www/ зазвичай вимагає таких прав
+User=root
+Group=root
+WorkingDirectory={{ app_dir }}
+Environment="PATH={{ app_dir }}/venv/bin"
+
+# Команда запуску Gunicorn (3 робочих процеси, слухає локальний порт 8000)
+# Увага: 'autoapp:app' — це стандартна точка входу для цього застосунку. Якщо вона інша, ми це виправимо.
+ExecStart={{ app_dir }}/venv/bin/gunicorn --workers 3 --bind 127.0.0.1:8000 app:app
+
+[Install]
+WantedBy=multi-user.target

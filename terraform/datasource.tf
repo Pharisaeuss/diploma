@@ -22,3 +22,5 @@ data "aws_availability_zones" "available" {
 
 # Data source to get your AWS Account ID automatically
 data "aws_caller_identity" "current" {}
+
+data "aws_region" "current" {}

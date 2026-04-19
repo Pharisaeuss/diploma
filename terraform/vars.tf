@@ -45,8 +45,8 @@ variable "db_username" {
   default     = "conduit_admin"
 }
 
-variable "db_password" {
-  description = "Password for the PostgreSQL database"
-  type        = string
-  sensitive   = true
-}
+# variable "db_password" {
+#   description = "Password for the PostgreSQL database"
+#   type        = string
+#   sensitive   = true
+# }

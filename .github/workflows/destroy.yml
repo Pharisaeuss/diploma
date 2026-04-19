@@ -1,0 +1,52 @@
+name: Infrastructure Cleanup (Destroy)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Оберіть середовище для видалення (збігається з назвою .tfvars)'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+      confirmation:
+        description: 'Введіть "DESTROY" великими літерами для підтвердження'
+        required: true
+        default: 'NO'
+
+env:
+  AWS_REGION: "eu-central-1"
+
+jobs:
+  destroy:
+    name: 'Terraform Destroy'
+    runs-on: ubuntu-latest
+    
+    # ГОЛОВНИЙ ЗАПОБІЖНИК: Робота перерветься, якщо користувач не ввів "DESTROY"
+    if: github.event.inputs.confirmation == 'DESTROY'
+
+    defaults:
+      run:
+        working-directory: ./terraform
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Destroy
+        run: terraform destroy -var-file="${{ github.event.inputs.environment }}.tfvars" -auto-approve -input=false

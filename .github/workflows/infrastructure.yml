@@ -1,0 +1,64 @@
+name: Infrastructure Creation(Terraform)
+
+on:
+  # Запускаємо при злитті/пуші в main
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'terraform/**'
+  # Запускаємо ПЕРЕВІРКУ при створенні Pull Request
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'terraform/**'
+
+# Глобальні змінні
+env:
+  AWS_REGION: "eu-central-1"
+  PROJECT_ENV: "dev"
+  # Передаємо цю ж змінну прямо в Terraform (у код .tf як var.environment)
+  TF_VAR_environment: "dev" 
+
+jobs:
+  terraform:
+    name: 'Terraform Checks & Apply'
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./terraform
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: "1.5.0" 
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Format
+        run: terraform fmt -check
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -input=false
+
+      # Apply: Запускається ТІЛЬКИ якщо це push у гілку main
+      # (Якщо це Pull Request, пайплайн зупиниться на етапі Plan)
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false

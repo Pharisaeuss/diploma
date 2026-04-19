@@ -81,8 +81,7 @@ resource "aws_security_group" "asg_sg" {
     from_port       = 22
     to_port         = 22
     protocol        = "tcp"
-    cidr_blocks     = ["0.0.0.0/0"]
-    security_groups = [aws_security_group.eice_sg]
+    security_groups = [aws_security_group.eice_sg.id]
   }
 
   # Outbound Rules (Allow all traffic out)
@@ -118,14 +117,16 @@ resource "aws_security_group" "eice_sg" {
   name        = "eice-security-group"
   description = "Security group for EC2 Instance Connect Endpoint"
   vpc_id      = data.aws_vpc.default.id
+}
 
-  egress {
-    from_port = 22
-    to_port   = 22
-    protocol  = "tcp"
-
-    security_groups = [aws_security_group.asg_sg.id]
-  }
+# Окреме правило, яке додається ПІСЛЯ створення обох груп
+resource "aws_security_group_rule" "eice_egress_to_asg" {
+  type                     = "egress"
+  from_port                = 22
+  to_port                  = 22
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.eice_sg.id
+  source_security_group_id = aws_security_group.asg_sg.id
 }
 
 # Security Group для PostgreSQL

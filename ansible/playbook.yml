@@ -1,0 +1,44 @@
+- name: Deploy RealWorld Flask App (Conduit)
+  hosts: all
+  become: true
+  vars:
+    repo_url: "https://github.com/render-examples/flask-hello-world.git"
+    app_dir: "/var/www/conduit"
+    # Ці дані ми отримаємо з Terraform outputs
+    db_host: "{{ lookup('env', 'RDS_ENDPOINT') }}" 
+
+  tasks:
+    - name: Install system dependencies
+      yum:
+        name: [git, python3, python3-pip, nginx, gcc, python3-devel, postgresql-devel]
+        state: present
+
+    - name: Clone the repository
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ app_dir }}"
+        force: yes
+
+    - name: Install Python dependencies
+      pip:
+        requirements: "{{ app_dir }}/requirements.txt"
+        virtualenv: "{{ app_dir }}/venv"
+        virtualenv_command: "/usr/bin/python3 -m venv"
+
+    - name: Configure Gunicorn systemd service
+      template:
+        src: templates/gunicorn.service.j2
+        dest: /etc/systemd/system/gunicorn.service
+      notify: restart gunicorn
+
+    - name: Configure Nginx as Reverse Proxy
+      template:
+        src: templates/nginx_app.conf.j2
+        dest: /etc/nginx/conf.d/conduit.conf
+      notify: restart nginx
+
+  handlers:
+    - name: restart gunicorn
+      systemd: { name: gunicorn, state: restarted, enabled: yes, daemon_reload: yes }
+    - name: restart nginx
+      systemd: { name: nginx, state: restarted, enabled: yes }

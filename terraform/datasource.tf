@@ -19,3 +19,6 @@ data "aws_ami" "amazon_linux" {
 data "aws_availability_zones" "available" {
   state = "available"
 }
+
+# Data source to get your AWS Account ID automatically
+data "aws_caller_identity" "current" {}

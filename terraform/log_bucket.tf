@@ -1,6 +1,6 @@
 # Create the S3 Bucket
 resource "aws_s3_bucket" "alb_logs" {
-  bucket_prefix        = "my-alb-logs-${var.env}-2026-diploma-" # Must be globally unique
+  bucket_prefix = "my-alb-logs-${var.env}-2026-diploma-" # Must be globally unique
   force_destroy = true
 }
 
@@ -43,7 +43,7 @@ resource "aws_iam_role_policy" "ssm_s3_policy" {
           "s3:PutObject",
           "s3:ListBucket"
         ]
-        Effect   = "Allow"
+        Effect = "Allow"
         Resource = [
           aws_s3_bucket.ansible_ssm_bucket.arn,
           "${aws_s3_bucket.ansible_ssm_bucket.arn}/*"

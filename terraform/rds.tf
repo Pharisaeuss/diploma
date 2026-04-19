@@ -10,19 +10,19 @@ resource "aws_db_subnet_group" "db_subnet_group" {
 
 # Створення інстансу бази даних PostgreSQL
 resource "aws_db_instance" "postgres" {
-  identifier             = "conduit-db-${var.env}"
-  engine                 = "postgres"
-  engine_version         = "16.13" 
-  instance_class         = "db.t3.micro" 
-  allocated_storage      = 20
-  
-  db_name                = "conduit" 
-  username               = var.db_username
-  password               = var.db_password
-  
+  identifier        = "conduit-db-${var.env}"
+  engine            = "postgres"
+  engine_version    = "16.13"
+  instance_class    = "db.t3.micro"
+  allocated_storage = 20
+
+  db_name  = "conduit"
+  username = var.db_username
+  password = var.db_password
+
   db_subnet_group_name   = aws_db_subnet_group.db_subnet_group.name
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
-  
-  skip_final_snapshot    = true 
-  publicly_accessible    = false # Критично для безпеки: немає доступу з Інтернету
+
+  skip_final_snapshot = true
+  publicly_accessible = false # Критично для безпеки: немає доступу з Інтернету
 }

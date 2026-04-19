@@ -1,10 +1,10 @@
 # Create a Private Route Table for your subnets
 resource "aws_route_table" "private_rt" {
   vpc_id = data.aws_vpc.default.id
-  
+
   route {
     cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.nat.id 
+    nat_gateway_id = aws_nat_gateway.nat.id
   }
 
   tags = { Name = "private-rt-${var.env}" }
@@ -33,12 +33,12 @@ resource "aws_vpc_endpoint" "s3_endpoint" {
   vpc_id            = data.aws_vpc.default.id
   service_name      = "com.amazonaws.${data.aws_region.current.name}.s3"
   vpc_endpoint_type = "Gateway"
-  route_table_ids = [aws_route_table.private_rt.id]
+  route_table_ids   = [aws_route_table.private_rt.id]
 }
 
 # The EC2 Instance Connect Endpoint
 resource "aws_ec2_instance_connect_endpoint" "private_connect" {
-  subnet_id = aws_subnet.custom_asg_subnet.id
+  subnet_id          = aws_subnet.custom_asg_subnet.id
   security_group_ids = [aws_security_group.eice_sg.id]
   preserve_client_ip = false
 

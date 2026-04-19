@@ -17,7 +17,7 @@ env:
   AWS_REGION: "eu-central-1"
   PROJECT_ENV: "dev"
   # Передаємо цю ж змінну прямо в Terraform (у код .tf як var.environment)
-  TF_VAR_environment: "dev" 
+#  TF_VAR_environment: "dev" 
 
 jobs:
   terraform:
@@ -55,10 +55,10 @@ jobs:
 
       - name: Plan
         id: plan
-        run: terraform plan -input=false
+        run: terraform plan -var-file="${{ env.PROJECT_ENV }}.tfvars" -input=false
 
       # Apply: Запускається ТІЛЬКИ якщо це push у гілку main
       # (Якщо це Pull Request, пайплайн зупиниться на етапі Plan)
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: terraform apply -auto-approve -input=false
+        run: terraform apply -var-file="${{ env.PROJECT_ENV }}.tfvars" -auto-approve -input=false

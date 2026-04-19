@@ -1,5 +1,3 @@
-data "aws_region" "current" {}
-
 # Create a Private Route Table for your subnets
 resource "aws_route_table" "private_rt" {
   vpc_id = data.aws_vpc.default.id

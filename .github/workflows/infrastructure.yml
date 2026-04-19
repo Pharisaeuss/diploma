@@ -1,16 +1,6 @@
 name: Infrastructure Creation(Terraform)
 
 on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Choose environment (for .tfvars)'
-        required: true
-        default: 'dev'
-        type: choice
-        options:
-          - dev
-          - prod
   # Запускаємо при злитті/пуші в main
   push:
     branches: [ "main" ]
@@ -25,8 +15,9 @@ on:
 # Глобальні змінні
 env:
   AWS_REGION: "eu-central-1"
-  PROJECT_ENV: "${{ github.event.inputs.environment }}"
+  PROJECT_ENV: "dev"
   # Передаємо цю ж змінну прямо в Terraform (у код .tf як var.environment)
+#  TF_VAR_environment: "dev" 
 
 jobs:
   terraform:

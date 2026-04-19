@@ -27,13 +27,11 @@ variable "zone" {
 variable "machine_type" {
   description = "Define the type of machine for instance group"
   type        = string
-  default     = "t3.micro"
 }
 
 variable "image" {
   description = "type of image for instnces"
   type        = string
-  default     = "al2023-ami-2023*-x86_64"
 }
 
 variable "env" {

@@ -8,6 +8,21 @@ resource "aws_db_subnet_group" "db_subnet_group" {
   }
 }
 
+# Генеруємо випадковий пароль
+resource "random_password" "db_password" {
+  length           = 16
+  special          = true
+  override_special = "!#$%&*()-_=+[]{}<>:?"
+}
+
+# Зберігаємо пароль в AWS SSM Parameter Store 
+resource "aws_ssm_parameter" "db_password" {
+  name        = "/${var.env}/database/password"
+  description = "Database password for ${var.env} environment"
+  type        = "SecureString"
+  value       = random_password.db_password.result
+}
+
 # Створення інстансу бази даних PostgreSQL
 resource "aws_db_instance" "postgres" {
   identifier        = "conduit-db-${var.env}"
@@ -18,7 +33,7 @@ resource "aws_db_instance" "postgres" {
 
   db_name  = "conduit"
   username = var.db_username
-  password = var.db_password
+  password = aws_ssm_parameter.db_password.value 
 
   db_subnet_group_name   = aws_db_subnet_group.db_subnet_group.name
   vpc_security_group_ids = [aws_security_group.rds_sg.id]

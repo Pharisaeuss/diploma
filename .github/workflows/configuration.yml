@@ -5,6 +5,7 @@ on:
     branches: [ "main" ]
     paths:
       - 'ansible/**' # Запуск тільки при зміні папки з Ansible
+  workflow_dispatch:
 
 env:
   AWS_REGION: "eu-central-1"

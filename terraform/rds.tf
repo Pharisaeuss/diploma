@@ -43,14 +43,14 @@ resource "aws_db_instance" "postgres" {
 }
 
 # Запис Endpoint бази даних
-resource "aws_ssm_parameter" "db_endpoint" {
+resource "aws_ssm_parameter" "db_endpoint_record" {
   name  = "/${var.env}/database/endpoint"
   type  = "String"
   value = aws_db_instance.postgres.address # або .endpoint (але без порту краще .address)
 }
 
 # Запис пароля бази даних в SSM Parameter Store
-resource "aws_ssm_parameter" "db_password" {
+resource "aws_ssm_parameter" "db_password_record" {
   name  = "/${var.env}/database/password"
   type  = "SecureString"
   value = aws_db_instance.postgres.password

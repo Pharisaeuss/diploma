@@ -16,11 +16,6 @@
       debug:
         msg: "Ansible fetched Bucket: {{ app_s3_bucket }} and DB Host: {{ db_host }}, Region: {{ target_region }}"
 
-    - name: Create app config file with DB credentials
-      template:
-        src: templates/config.py.j2
-        dest: /var/www/conduit/config.py
-
     - name: Install system dependencies
       yum:
         name: [git, python3, python3-pip, nginx, gcc, python3-devel, postgresql-devel]
@@ -37,6 +32,11 @@
         requirements: "{{ app_dir }}/requirements.txt"
         virtualenv: "{{ app_dir }}/venv"
         virtualenv_command: "/usr/bin/python3 -m venv"
+
+    - name: Create app config file with DB credentials
+      template:
+        src: templates/config.py.j2
+        dest: /var/www/conduit/config.py
 
     - name: Configure Gunicorn systemd service
       template:

@@ -41,3 +41,17 @@ resource "aws_db_instance" "postgres" {
   skip_final_snapshot = true
   publicly_accessible = false # Критично для безпеки: немає доступу з Інтернету
 }
+
+# Запис Endpoint бази даних
+resource "aws_ssm_parameter" "db_endpoint" {
+  name  = "/${var.env}/database/endpoint"
+  type  = "String"
+  value = aws_db_instance.postgres.address # або .endpoint (але без порту краще .address)
+}
+
+# Запис пароля бази даних в SSM Parameter Store
+resource "aws_ssm_parameter" "db_password" {
+  name  = "/${var.env}/database/password"
+  type  = "SecureString"
+  value = aws_db_instance.postgres.password
+}

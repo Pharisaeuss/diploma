@@ -52,3 +52,10 @@ resource "aws_iam_role_policy" "ssm_s3_policy" {
     ]
   })
 }
+
+# Запис імені бакета
+resource "aws_ssm_parameter" "bucket_name" {
+  name  = "/${var.env}/s3/app_bucket_name"
+  type  = "String"
+  value = aws_s3_bucket.ansible_ssm_bucket.id
+}

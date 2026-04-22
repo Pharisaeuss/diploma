@@ -42,7 +42,7 @@ variable "env" {
 variable "db_username" {
   description = "Username for the PostgreSQL database"
   type        = string
-  default     = "conduit_admin"
+  default     = "streamlit_admin"
 }
 
 # variable "db_password" {

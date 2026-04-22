@@ -2,14 +2,19 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
 import datetime
+import urllib.parse  
 
 # Налаштування сторінки
 st.set_page_config(page_title="DevOps Dashboard", page_icon="🚀", layout="wide")
 st.title("🚀 Моніторинг Інфраструктури (Дипломний проєкт)")
 st.markdown("Цей дашборд розгорнуто автоматично через **GitHub Actions + Ansible** на базі **AWS EC2 (Amazon Linux 2023)**.")
 
-# Підключення до БД 
-DB_URI = "postgresql://postgres:{{ db_password }}@{{ db_host }}:5432/postgres"
+# Безпечне кодування пароля (ховаємо спецсимволи типу @, /, #)
+raw_password = "{{ db_password }}"
+encoded_password = urllib.parse.quote_plus(raw_password)
+
+# Підключення до БД (Додано sslmode=require для сумісності з AWS RDS)
+DB_URI = f"postgresql://postgres:{encoded_password}@{{ db_host }}:5432/postgres?sslmode=require"
 
 @st.cache_resource
 def init_connection():

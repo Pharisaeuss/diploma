@@ -29,9 +29,15 @@
         state: directory
         owner: ec2-user
 
+    - name: Copy requirements.txt to server
+      copy:
+        src: templates/requirements.txt
+        dest: "{{ app_dir }}/requirements.txt"
+        owner: ec2-user
+
     - name: Install Python dependencies
       pip:
-        requirements: "templates/requirements.txt"
+        requirements: "{{ app_dir }}/requirements.txt"
         virtualenv: "{{ app_dir }}/venv"
         virtualenv_command: python3 -m venv
 

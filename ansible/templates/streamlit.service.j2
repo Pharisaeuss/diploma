@@ -7,6 +7,9 @@ User=ec2-user
 Group=ec2-user
 WorkingDirectory=/var/www/streamlit
 Environment="PATH=/var/www/streamlit/venv/bin"
+Environment="DB_HOST={{ db_host }}"
+Environment="DB_PASSWORD={{ db_password }}"
+Environment="DB_USER={{ db_user }}"
 # Запускаємо на внутрішньому порту 8501 без браузера
 ExecStart=/var/www/streamlit/venv/bin/streamlit run app.py --server.port 8501 --server.address 127.0.0.1 --server.headless true
 Restart=always

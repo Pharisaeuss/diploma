@@ -11,6 +11,7 @@
     target_env: "{{ lookup('env', 'PROJECT_ENV') | default('dev') }}"
     app_s3_bucket: "{{ lookup('amazon.aws.aws_ssm', '/' + target_env + '/s3/app_bucket_name', region=target_region) }}"
     db_host: "{{ lookup('amazon.aws.aws_ssm', '/' + target_env + '/database/endpoint', region=target_region) }}"
+    db_user: "{{ lookup('amazon.aws.aws_ssm', '/' + target_env + '/database/username', region=target_region) }}"
     db_password: "{{ lookup('amazon.aws.aws_ssm', '/' + target_env + '/database/password', region=target_region, decrypt=True) }}"
 
   tasks:

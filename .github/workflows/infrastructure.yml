@@ -1,6 +1,7 @@
 name: Infrastructure Creation(Terraform)
 
 on:
+  workflow_dispatch:
   # Запускаємо при злитті/пуші в main
   push:
     branches: [ "main" ]

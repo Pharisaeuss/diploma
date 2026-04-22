@@ -12,7 +12,7 @@ resource "aws_db_subnet_group" "db_subnet_group" {
 resource "random_password" "db_password" {
   length           = 16
   special          = true
-  override_special = "!#$%&*()-_=+[]{}<>:?"
+  override_special = "@!#$%&*()-_=+[]{}<>:?"
 }
 
 # Зберігаємо пароль в AWS SSM Parameter Store 

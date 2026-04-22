@@ -61,5 +61,5 @@ jobs:
       # Apply: Запускається ТІЛЬКИ якщо це push у гілку main
       # (Якщо це Pull Request, пайплайн зупиниться на етапі Plan)
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/main' #&& github.event_name == 'push' for testing code enabled apply on trigger 
         run: terraform apply -var-file="${{ env.PROJECT_ENV }}.tfvars" -auto-approve -input=false

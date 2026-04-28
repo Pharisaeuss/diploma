@@ -1,65 +1,85 @@
-name: Infrastructure Creation(Terraform)
+name: Infrastructure Creation (Terragrunt)
 
 on:
   workflow_dispatch:
-  # Запускаємо при злитті/пуші в main
+    inputs:
+      target_env:
+        description: 'Choose the environment for deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - stage
+          - prod
+
+  # Run on merge/push to main
   push:
     branches: [ "main" ]
     paths:
       - 'terraform/**'
-  # Запускаємо ПЕРЕВІРКУ при створенні Pull Request
+      
+  # Run check when creating a Pull Request
   pull_request:
     branches: [ "main" ]
     paths:
       - 'terraform/**'
 
-# Глобальні змінні
+# Global variables
 env:
   AWS_REGION: "eu-central-1"
-  PROJECT_ENV: "dev"
-  # Передаємо цю ж змінну прямо в Terraform (у код .tf як var.environment)
-#  TF_VAR_environment: "dev" 
+  TG_ENV: ${{ github.event.inputs.target_env || 'dev' }}
+  TG_STATE_BUCKET: "tfstate-buckets3-2026"
 
 jobs:
-  terraform:
-    name: 'Terraform Checks & Apply'
+  terragrunt:
+    name: 'Terragrunt Checks & Apply'
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: ./terraform
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.14.5" 
+          terraform_wrapper: false   
 
-      - name: Terraform Init
-        run: terraform init
+      # 2. Встановлюємо Terragrunt
+      - name: Setup Terragrunt
+        run: |
+          wget https://github.com/gruntwork-io/terragrunt/releases/download/v0.55.11/terragrunt_linux_amd64
+          mv terragrunt_linux_amd64 /usr/local/bin/terragrunt
+          chmod +x /usr/local/bin/terragrunt
+          terragrunt --version
 
-      - name: Format Check
-        run: terraform fmt -check
+      - name: Format Check (HCL)
+        working-directory: ./terraform
+        run: terragrunt hclfmt --terragrunt-check
+
+      - name: Terragrunt Init
+        working-directory: ./terraform/environments/${{ env.TG_ENV }}
+        run: terragrunt run-all init --terragrunt-non-interactive
 
       - name: Validate Code
-        run: terraform validate
+        working-directory: ./terraform/environments/${{ env.TG_ENV }}
+        run: terragrunt run-all validate --terragrunt-non-interactive
 
-      - name: Plan
+      - name: Terragrunt Plan
         id: plan
-        run: terraform plan -var-file="${{ env.PROJECT_ENV }}.tfvars" -input=false
+        working-directory: ./terraform/environments/${{ env.TG_ENV }}
+        run: terragrunt run-all plan --terragrunt-non-interactive
 
-      # Apply: Запускається ТІЛЬКИ якщо це push у гілку main
-      # (Якщо це Pull Request, пайплайн зупиниться на етапі Plan)
-      - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' #&& github.event_name == 'push' for testing code enabled apply on trigger 
-        run: terraform apply -var-file="${{ env.PROJECT_ENV }}.tfvars" -auto-approve -input=false
+      # Runs only if it is a push to main OR a manual run 
+      - name: Terragrunt Apply
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        working-directory: ./terraform/environments/${{ env.TG_ENV }}
+        run: terragrunt run-all apply --terragrunt-non-interactive

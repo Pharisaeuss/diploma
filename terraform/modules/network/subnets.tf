@@ -23,7 +23,7 @@ resource "aws_subnet" "alb_subnet_1" {
 }
 
 # Subnet for ALB Zone 2
-resource "aws_subnet" "`alb_subnet_2" {
+resource "aws_subnet" "alb_subnet_2" {
   vpc_id                  = data.aws_vpc.default.id
   cidr_block              = "172.31.202.0/24"
   availability_zone       = data.aws_availability_zones.available.names[1]

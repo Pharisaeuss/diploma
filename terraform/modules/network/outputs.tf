@@ -3,11 +3,11 @@ output "vpc_id" {
 }
 
 output "asg_subnet_id" {
-  value = aws_subnet.custom_asg_subnet.id
+  value = aws_subnet.asg_subnet.id
 }
 
 output "alb_subnet_ids" {
-  value = [aws_subnet.custom_alb_subnet_1.id, aws_subnet.custom_alb_subnet_2.id]
+  value = [aws_subnet.alb_subnet_1.id, aws_subnet.alb_subnet_2.id]
 }
 
 output "db_subnet_ids" {

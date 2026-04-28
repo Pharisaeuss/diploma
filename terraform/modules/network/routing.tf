@@ -17,12 +17,12 @@ resource "aws_route_table_association" "nat_assoc" {
 }
 
 resource "aws_route_table_association" "alb_assoc_1" {
-  subnet_id      = aws_subnet.custom_alb_subnet_1.id
+  subnet_id      = aws_subnet.alb_subnet_1.id
   route_table_id = aws_route_table.public_rt.id
 }
 
 resource "aws_route_table_association" "alb_assoc_2" {
-  subnet_id      = aws_subnet.custom_alb_subnet_2.id
+  subnet_id      = aws_subnet.alb_subnet_2.id
   route_table_id = aws_route_table.public_rt.id
 }
 
@@ -52,7 +52,7 @@ resource "aws_route_table" "private_rt" {
 
 # Associate private subnets with the private route table
 resource "aws_route_table_association" "private_assoc_1" {
-  subnet_id      = aws_subnet.custom_asg_subnet.id
+  subnet_id      = aws_subnet.asg_subnet.id
   route_table_id = aws_route_table.private_rt.id
 }
 

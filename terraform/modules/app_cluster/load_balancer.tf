@@ -3,11 +3,11 @@ resource "aws_lb" "main_alb" {
   name               = "app-alb-${var.env}"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb_sg.id]
-  subnets = [aws_subnet.custom_alb_subnet_1.id, aws_subnet.custom_alb_subnet_2.id]
+  security_groups    = [var.alb_sg_id]
+  subnets            = var.alb_subnet_ids
 
   access_logs {
-    bucket  = aws_s3_bucket.alb_logs.id
+    bucket  = var.alb_logs_bucket_id
     prefix  = "alb-logs/${var.env}"
     enabled = true
   }
@@ -20,7 +20,7 @@ resource "aws_lb_target_group" "app_tg" {
   name     = "app-target-group-${var.env}"
   port     = 80
   protocol = "HTTP"
-  vpc_id   = data.aws_vpc.default.id
+  vpc_id   = var.vpc_id
 
   health_check {
     path                = "/"

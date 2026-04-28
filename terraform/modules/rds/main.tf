@@ -1,7 +1,7 @@
 # Create Group of subnets for RDS
 resource "aws_db_subnet_group" "db_subnet_group" {
   name       = "main-db-subnet-group-${var.env}"
-  subnet_ids = [aws_subnet.db_private_1.id, aws_subnet.db_private_2.id]
+  subnet_ids = var.db_subnet_ids
 
   tags = {
     Name = "PostgreSQL Subnet Group ${var.env}"
@@ -24,10 +24,10 @@ resource "aws_db_instance" "postgres" {
 
   db_name  = var.db_name
   username = var.db_username
-  password = aws_ssm_parameter.db_password.value
+  password = random_password.db_password.result
 
   db_subnet_group_name   = aws_db_subnet_group.db_subnet_group.name
-  vpc_security_group_ids = [aws_security_group.rds_sg.id]
+  vpc_security_group_ids = [var.rds_sg_id]
 
   skip_final_snapshot = true
   publicly_accessible = false # no Internet access
@@ -54,6 +54,6 @@ resource "aws_ssm_parameter" "db_password_record" {
 resource "aws_ssm_parameter" "db_endpoint_record" {
   name      = "/${var.env}/database/endpoint"
   type      = "String"
-  value     = aws_db_instance.postgres.address 
+  value     = aws_db_instance.postgres.address
   overwrite = true
 }

@@ -1,5 +1,5 @@
 resource "aws_launch_template" "app_lt" {
-  name_prefix            = "my-app-template-${var.env}"
+  name_prefix            = "app-template-${var.env}"
   image_id               = data.aws_ami.amazon_linux.id
   instance_type          = var.machine_type
   vpc_security_group_ids = [var.asg_sg_id]
@@ -17,7 +17,7 @@ resource "aws_launch_template" "app_lt" {
 }
 
 resource "aws_autoscaling_group" "app_asg" {
-  name             = "my-asg-${var.env}"
+  name             = "app-asg-${var.env}"
   desired_capacity = 1
   max_size         = 3
   min_size         = 1
@@ -45,6 +45,6 @@ resource "aws_autoscaling_policy" "cpu_policy" {
     predefined_metric_specification {
       predefined_metric_type = "ASGAverageCPUUtilization"
     }
-    target_value = 50.0 
+    target_value = 50.0
   }
 }

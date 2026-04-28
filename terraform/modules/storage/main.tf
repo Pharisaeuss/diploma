@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "alb_logs" {
-  bucket_prefix = "my-alb-logs-${var.env}-2026-diploma-" 
+  bucket_prefix = "my-alb-logs-${var.env}-2026-diploma-"
   force_destroy = true
 }
 
@@ -31,7 +31,7 @@ resource "aws_s3_bucket" "ansible_ssm_bucket" {
 # Allow EC2 server to read and write to this bucket
 resource "aws_iam_role_policy" "ssm_s3_policy" {
   name = "ansible_ssm_s3_policy"
-  role = aws_iam_role.ec2_s3_role.id
+  role = var.ec2_role_id
 
   policy = jsonencode({
     Version = "2012-10-17"

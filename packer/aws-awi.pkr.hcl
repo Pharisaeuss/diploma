@@ -13,7 +13,7 @@ packer {
 
 source "amazon-ebs" "streamlit_app" {
   ami_name      = "streamlit-app-v${formatdate("YYYYMMDD-hhmm", timestamp())}"
-  instance_type = "t3.medium"
+  instance_type = "c7i-flex.large"
   region        = "eu-central-1"
   enable_free_tier_pricing_metadata_options = false
   source_ami_filter {

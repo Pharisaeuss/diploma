@@ -15,6 +15,7 @@ source "amazon-ebs" "streamlit_app" {
   ami_name      = "streamlit-app-v${formatdate("YYYYMMDD-hhmm", timestamp())}"
   instance_type = "t3.medium"
   region        = "eu-central-1"
+  enable_free_tier_pricing_metadata_options = false
   source_ami_filter {
     filters = {
       name                = "al2023-ami-2023*-x86_64"

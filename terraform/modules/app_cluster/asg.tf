@@ -32,10 +32,10 @@ resource "aws_autoscaling_group" "app_asg" {
   instance_refresh {
     strategy = "Rolling"
     preferences {
-      min_healthy_percentage = 50 
+      min_healthy_percentage = 50
     }
     # Triggers after new AMI is available
-    triggers = ["tag"] 
+    triggers = ["tag"]
   }
 
   tag {

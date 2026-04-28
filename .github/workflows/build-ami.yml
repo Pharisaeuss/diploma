@@ -1,0 +1,44 @@
+name: Build Golden Image (Packer)
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for build image'
+        required: false
+        default: 'Manual rebuild'
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'ansible/**'    
+      - 'packer/**'     
+
+env:
+  AWS_REGION: "eu-central-1"
+
+jobs:
+  packer-build:
+    name: 'Packer Build AMI'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Packer
+        uses: hashicorp/setup-packer@main
+
+      - name: Packer Init
+        working-directory: ./packer
+        run: packer init .
+
+      - name: Packer Build
+        working-directory: ./packer
+        run: packer build .

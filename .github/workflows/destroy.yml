@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Оберіть середовище для видалення (dev, stage, prod)'
+        description: 'Choose environment for deleting (dev, stage, prod)'
         required: true
         default: 'dev'
         type: choice
@@ -13,7 +13,7 @@ on:
           - stage
           - prod
       confirmation:
-        description: 'Введіть "DESTROY" великими літерами для підтвердження'
+        description: 'Enter "DESTROY" for confirmation'
         required: true
         default: 'NO'
 

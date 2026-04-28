@@ -1,10 +1,9 @@
 name: Application Deployment (Ansible)
-
-on:
-  push:
-    branches: [ "main" ]
-    paths:
-      - 'ansible/**' # Запуск тільки при зміні папки з Ansible
+#on:
+#  push:
+#    branches: [ "main" ]
+#    paths:
+#      - 'ansible/**' # Запуск тільки при зміні папки з Ansible
   workflow_dispatch:
 
 env:

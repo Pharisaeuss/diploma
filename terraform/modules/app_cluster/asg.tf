@@ -18,15 +18,24 @@ resource "aws_launch_template" "app_lt" {
 
 resource "aws_autoscaling_group" "app_asg" {
   name             = "app-asg-${var.env}"
-  desired_capacity = 1
-  max_size         = 3
-  min_size         = 1
+  desired_capacity = 2
+  max_size         = 4
+  min_size         = 2
 
   vpc_zone_identifier = [var.asg_subnet_id]
 
   launch_template {
     id      = aws_launch_template.app_lt.id
     version = "$Latest"
+  }
+
+  instance_refresh {
+    strategy = "Rolling"
+    preferences {
+      min_healthy_percentage = 50 
+    }
+    # Triggers after new AMI is available
+    triggers = ["tag"] 
   }
 
   tag {

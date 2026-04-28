@@ -44,7 +44,7 @@
 
     - name: Deploy Streamlit App (with injected DB secrets)
       template:
-        src: templates/app.py.j2
+        src: templates/app.j2
         dest: "{{ app_dir }}/app.py"
         owner: ec2-user
       notify: restart streamlit

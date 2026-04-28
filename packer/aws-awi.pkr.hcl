@@ -13,7 +13,7 @@ packer {
 
 source "amazon-ebs" "streamlit_app" {
   ami_name      = "streamlit-app-v${formatdate("YYYYMMDD-hhmm", timestamp())}"
-  instance_type = "t3.micro"
+  instance_type = "t3.medium"
   region        = "eu-central-1"
   source_ami_filter {
     filters = {

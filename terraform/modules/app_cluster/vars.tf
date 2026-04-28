@@ -6,7 +6,7 @@ variable "env" {
 variable "machine_type" {
   description = "EC2 instance type"
   type        = string
-  default     = "t3.medium"
+  default     = "t3.micro"
 }
 
 variable "vpc_id" {

@@ -15,9 +15,8 @@ dependency "network" {
 }
 
 inputs = {
-  env         = "dev"
-  db_username = "postgres"
-  db_name     = "postgres"
+  db_username = "streamlit_admin"
+  db_name     = "streamlit_db"
 
   db_subnet_ids = dependency.network.outputs.db_subnet_ids
   rds_sg_id     = dependency.network.outputs.rds_sg_id

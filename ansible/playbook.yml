@@ -7,17 +7,17 @@
     app_dir: "/var/www/streamlit"
     # Ці дані ми отримаємо з Terraform outputs
     #db_host: "{{ lookup('env', 'RDS_ENDPOINT') }}" 
-    target_region: "{{ AWS_REGION | default('eu-central-1') }}"
-    target_env: "{{ lookup('env', 'PROJECT_ENV') | default('dev') }}"
-    app_s3_bucket: "{{ lookup('amazon.aws.aws_ssm', '/' + target_env + '/s3/app_bucket_name', region=target_region) }}"
-    db_host: "{{ lookup('amazon.aws.aws_ssm', '/' + target_env + '/database/endpoint', region=target_region) }}"
-    db_user: "{{ lookup('amazon.aws.aws_ssm', '/' + target_env + '/database/username', region=target_region) }}"
-    db_password: "{{ lookup('amazon.aws.aws_ssm', '/' + target_env + '/database/password', region=target_region, decrypt=True) }}"
+    # target_region: "{{ AWS_REGION | default('eu-central-1') }}"
+    # target_env: "{{ lookup('env', 'PROJECT_ENV') | default('dev') }}"
+    # app_s3_bucket: "{{ lookup('amazon.aws.aws_ssm', '/' + target_env + '/s3/app_bucket_name', region=target_region) }}"
+    # db_host: "{{ lookup('amazon.aws.aws_ssm', '/' + target_env + '/database/endpoint', region=target_region) }}"
+    # db_user: "{{ lookup('amazon.aws.aws_ssm', '/' + target_env + '/database/username', region=target_region) }}"
+    # db_password: "{{ lookup('amazon.aws.aws_ssm', '/' + target_env + '/database/password', region=target_region, decrypt=True) }}"
 
   tasks:
-    - name: Debug retrieved values
-      debug:
-        msg: "Ansible fetched Bucket: {{ app_s3_bucket }} and DB Host: {{ db_host }}, Region: {{ target_region }}, Env: {{ target_env }}"
+    # - name: Debug retrieved values
+    #   debug:
+    #     msg: "Ansible fetched Bucket: {{ app_s3_bucket }} and DB Host: {{ db_host }}, Region: {{ target_region }}, Env: {{ target_env }}"
 
     - name: Install system dependencies
       yum:
@@ -42,9 +42,9 @@
         virtualenv: "{{ app_dir }}/venv"
         virtualenv_command: python3 -m venv
 
-    - name: Deploy Streamlit App (with injected DB secrets)
-      template:
-        src: templates/app.j2
+    - name: Copy Streamlit App
+      copy:
+        src: templates/app.py
         dest: "{{ app_dir }}/app.py"
         owner: ec2-user
       notify: restart streamlit

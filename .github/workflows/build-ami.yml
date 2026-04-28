@@ -34,11 +34,6 @@ jobs:
 
       - name: Setup Packer
         uses: hashicorp/setup-packer@main
-        
-      - name: Install AWS dependencies for Ansible
-        run: |
-          pipx inject ansible-core boto3 botocore
-          ansible-galaxy collection install amazon.aws
 
       - name: Packer Init
         working-directory: ./packer

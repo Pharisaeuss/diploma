@@ -33,6 +33,15 @@ resource "aws_db_instance" "postgres" {
   publicly_accessible = false # no Internet access
 }
 
+# Record the database name
+resource "aws_ssm_parameter" "db_name_record" {
+  name        = "/${var.env}/database/name"
+  description = "Database Name"
+  type        = "String"
+  value       = aws_db_instance.postgres.db_name
+  overwrite   = true
+}
+
 # Record the database username
 resource "aws_ssm_parameter" "db_username_record" {
   name        = "/${var.env}/database/username"

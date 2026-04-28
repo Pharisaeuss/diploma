@@ -1,7 +1,7 @@
 import os
 import boto3
 import streamlit as st
-import psycopg2 
+import psycopg2
 
 ENV = os.environ.get('ENV', 'dev')
 

@@ -14,5 +14,6 @@ dependency "iam" {
 }
 
 inputs = {
+  env         = "dev"
   ec2_role_id = dependency.iam.outputs.ec2_role_id
 }

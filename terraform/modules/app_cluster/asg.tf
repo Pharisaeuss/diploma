@@ -1,6 +1,6 @@
 resource "aws_launch_template" "app_lt" {
   name_prefix            = "app-template-${var.env}"
-  image_id               = data.aws_ami.amazon_linux.id
+  image_id               = data.aws_ami.app_ami.id
   instance_type          = var.machine_type
   vpc_security_group_ids = [var.asg_sg_id]
 

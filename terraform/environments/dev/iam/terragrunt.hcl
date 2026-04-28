@@ -5,3 +5,7 @@ include "root" {
 terraform {
   source = "../../../modules/iam"
 }
+
+inputs = {
+  env = "dev"
+}

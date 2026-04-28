@@ -7,5 +7,6 @@ terraform {
 }
 
 inputs = {
+  env  = "dev"
   zone = "eu-central-1a"
 }

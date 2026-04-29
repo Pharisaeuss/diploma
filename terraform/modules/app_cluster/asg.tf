@@ -15,6 +15,7 @@ mkdir -p /etc/systemd/system/streamlit.service.d
 cat <<EOT > /etc/systemd/system/streamlit.service.d/env.conf
 [Service]
 Environment="ENV=${var.env}"
+Environment="AWS_DEFAULT_REGION=${var.region}"
 EOT
 
 systemctl daemon-reload

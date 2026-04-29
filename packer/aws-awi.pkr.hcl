@@ -11,10 +11,15 @@ packer {
   }
 }
 
+variable "aws_region" {
+  type    = string
+  default = env("AWS_REGION")
+}
+
 source "amazon-ebs" "streamlit_app" {
   ami_name      = "streamlit-app-v${formatdate("YYYYMMDD-hhmm", timestamp())}"
   instance_type = "c7i-flex.large"
-  region        = env("AWS_REGION", "eu-central-1")
+  region        = var.aws_region != "" ? var.aws_region : "eu-central-1"
 
   source_ami_filter {
     filters = {

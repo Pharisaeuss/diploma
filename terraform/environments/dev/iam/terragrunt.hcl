@@ -6,6 +6,3 @@ terraform {
   source = "../../../modules/iam"
 }
 
-inputs = {
-  env = "dev"
-}

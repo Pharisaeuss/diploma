@@ -15,7 +15,6 @@ dependency "network" {
 }
 
 inputs = {
-  env         = "dev"
   db_username = "postgres"
   db_name     = "postgres"
 

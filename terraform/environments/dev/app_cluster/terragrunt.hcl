@@ -32,7 +32,6 @@ dependency "storage" {
 }
 
 inputs = {
-  env          = "dev"
   machine_type = "t3.micro"
 
   # Від мережі

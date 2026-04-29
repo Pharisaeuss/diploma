@@ -4,11 +4,12 @@ import streamlit as st
 import psycopg2
 
 ENV = os.environ.get('ENV', 'dev')
+AWS_REGION = os.environ.get('AWS_DEFAULT_REGION', 'eu-central-1')
 
 def get_ssm_secret(parameter_name, with_decryption=False):
     """Функція для безпечного читання секретів з AWS SSM"""
     try:
-        ssm = boto3.client('ssm')
+        ssm = boto3.client('ssm', region_name=AWS_REGION)
         response = ssm.get_parameter(Name=parameter_name, WithDecryption=with_decryption)
         return response['Parameter']['Value']
     except Exception as e:

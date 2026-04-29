@@ -14,7 +14,7 @@ packer {
 source "amazon-ebs" "streamlit_app" {
   ami_name      = "streamlit-app-v${formatdate("YYYYMMDD-hhmm", timestamp())}"
   instance_type = "c7i-flex.large"
-  region        = get_env("AWS_REGION", "eu-central-1")
+  region        = env("AWS_REGION", "eu-central-1")
 
   source_ami_filter {
     filters = {

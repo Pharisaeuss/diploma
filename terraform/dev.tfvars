@@ -1,5 +1,0 @@
-region       = "eu-central-1"
-zone         = "eu-central-1a"
-env          = "dev"
-machine_type = "t3.micro"
-image        = "al2023-ami-2023*-x86_64"

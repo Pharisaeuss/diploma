@@ -41,7 +41,7 @@ resource "aws_autoscaling_group" "app_asg" {
 
   launch_template {
     id      = aws_launch_template.app_lt.id
-    version = "$Latest"
+    version = aws_launch_template.app_lt.latest_version
   }
 
   instance_refresh {
@@ -50,7 +50,7 @@ resource "aws_autoscaling_group" "app_asg" {
       min_healthy_percentage = 50
     }
     # Triggers after new AMI is available
-    triggers = ["tag"]
+    #triggers = ["tag"]
   }
 
   tag {

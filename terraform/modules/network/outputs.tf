@@ -2,8 +2,8 @@ output "vpc_id" {
   value = data.aws_vpc.default.id
 }
 
-output "asg_subnet_id" {
-  value = aws_subnet.asg_subnet.id
+output "asg_subnet_ids" {
+  value = [aws_subnet.asg_subnet_1.id, aws_subnet.asg_subnet_2.id]
 }
 
 output "alb_subnet_ids" {

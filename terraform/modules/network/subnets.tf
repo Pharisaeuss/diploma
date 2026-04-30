@@ -1,5 +1,5 @@
-#  ASG Subnet (Private)
-resource "aws_subnet" "asg_subnet" {
+#  ASG Subnet (Private) - Zone 1
+resource "aws_subnet" "asg_subnet_1" {
   vpc_id                  = data.aws_vpc.default.id
   cidr_block              = "172.31.200.0/24"
   availability_zone       = var.zone
@@ -8,6 +8,16 @@ resource "aws_subnet" "asg_subnet" {
   tags = {
     Name = "EC2-ASG-Subnet-${var.env}"
   }
+}
+
+# ASG Subnet (Private) - Zone 2
+resource "aws_subnet" "asg_subnet_2" {
+  vpc_id                  = data.aws_vpc.default.id
+  cidr_block              = "172.31.205.0/24" 
+  availability_zone       = data.aws_availability_zones.available.names[1]
+  map_public_ip_on_launch = false
+
+  tags = { Name = "EC2-ASG-Subnet-2-${var.env}" }
 }
 
 # Subnet for ALB Zone 1

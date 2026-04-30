@@ -93,24 +93,36 @@ col1, col2 = st.columns(2)
 with col1:
     st.markdown("**1. Насиченість (Saturation): ASG Average CPU %**")
     cpu_data = get_cloudwatch_metrics('CPUUtilization', 'AWS/EC2', [{'Name': 'AutoScalingGroupName', 'Value': ASG_NAME}])
-    st.line_chart(cpu_data) if not cpu_data.empty else st.info("Дані CPU недоступні.")
+    if not cpu_data.empty:
+        st.line_chart(cpu_data)
+    else:
+        st.info("Дані CPU недоступні.")
 
     if ALB_SUFFIX:
         st.markdown("**2. Затримка (Latency): ALB Target Response Time (s)**")
         latency_data = get_cloudwatch_metrics('TargetResponseTime', 'AWS/ApplicationELB', [{'Name': 'LoadBalancer', 'Value': ALB_SUFFIX}])
-        st.line_chart(latency_data) if not latency_data.empty else st.info("Дані Latency недоступні.")
+        if not latency_data.empty:
+            st.line_chart(latency_data)
+        else:
+            st.info("Дані Latency недоступні.")
     else:
         st.warning("ALB_SUFFIX не задано. Метрики балансувальника вимкнено.")
 
 with col2:
     st.markdown("**3. Насиченість БД (Saturation): RDS Active Connections**")
     db_conn_data = get_cloudwatch_metrics('DatabaseConnections', 'AWS/RDS', [{'Name': 'DBInstanceIdentifier', 'Value': DB_IDENTIFIER}], stat="Maximum")
-    st.line_chart(db_conn_data) if not db_conn_data.empty else st.info("Дані підключень RDS недоступні.")
+    if not db_conn_data.empty:
+        st.line_chart(db_conn_data)
+    else:
+        st.info("Дані підключень RDS недоступні.")
 
     if ALB_SUFFIX:
         st.markdown("**4. Помилки (Errors): ALB 5XX Target Error Count**")
         errors_data = get_cloudwatch_metrics('HTTPCode_Target_5XX_Count', 'AWS/ApplicationELB', [{'Name': 'LoadBalancer', 'Value': ALB_SUFFIX}], stat="Sum")
-        st.bar_chart(errors_data) if not errors_data.empty else st.success("Помилок 5XX не виявлено 🎉")
+        if not errors_data.empty:
+            st.bar_chart(errors_data)
+        else:
+            st.success("Помилок 5XX не виявлено 🎉")
 
 # --- ІНТЕРФЕЙС: БІЗНЕС-ДАНІ ---
 st.divider()

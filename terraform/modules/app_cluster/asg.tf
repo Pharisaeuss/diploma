@@ -37,7 +37,7 @@ resource "aws_autoscaling_group" "app_asg" {
   max_size         = 4
   min_size         = 2
 
-  vpc_zone_identifier = [var.asg_subnet_id]
+  vpc_zone_identifier = var.asg_subnet_ids
 
   launch_template {
     id      = aws_launch_template.app_lt.id

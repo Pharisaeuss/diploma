@@ -18,9 +18,9 @@ variable "vpc_id" {
   type        = string
 }
 
-variable "asg_subnet_id" {
-  description = "Subnet ID for the Auto Scaling Group"
-  type        = string
+variable "asg_subnet_ids" {
+  description = "List of Subnet IDs for the Auto Scaling Group"
+  type        = list(string)
 }
 
 variable "alb_subnet_ids" {

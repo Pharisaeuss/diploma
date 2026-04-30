@@ -85,6 +85,8 @@ def init_db_and_seed_data(conn):
         conn.commit()
     cursor.close()
 
+st.write(f"🔍 Debug: ASG={ASG_NAME} | DB={DB_IDENTIFIER} | ALB={ALB_SUFFIX}")
+
 # --- ІНТЕРФЕЙС: ІНФРАСТРУКТУРНІ МЕТРИКИ (FOUR GOLDEN SIGNALS) ---
 st.subheader("☁️ Інфраструктурна телеметрія (AWS CloudWatch)")
 

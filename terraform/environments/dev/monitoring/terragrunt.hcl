@@ -8,7 +8,6 @@ terraform {
 
 dependency "app_cluster" {
   config_path = "../app_cluster"
-  
   mock_outputs = {
     asg_name       = "mock-asg-app-dev"
     alb_arn_suffix = "app/mock-alb-name/1234567890abcdef"

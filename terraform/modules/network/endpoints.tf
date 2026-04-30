@@ -6,7 +6,7 @@ resource "aws_vpc_endpoint" "s3_endpoint" {
 }
 
 resource "aws_ec2_instance_connect_endpoint" "private_connect" {
-  subnet_id          = aws_subnet.asg_subnet.id
+  subnet_id          = aws_subnet.asg_subnet_1.id # Use one of the ASG subnets for the endpoint
   security_group_ids = [aws_security_group.eice_sg.id]
   preserve_client_ip = false
   tags               = { Name = "private-eice-endpoint-${var.env}" }

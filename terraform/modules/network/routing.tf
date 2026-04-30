@@ -50,9 +50,15 @@ resource "aws_route_table" "private_rt" {
   tags = { Name = "private-rt-${var.env}" }
 }
 
-# Associate private subnets with the private route table
+# Associate the first private subnet (Zone 1) with the private route table
 resource "aws_route_table_association" "private_assoc_1" {
-  subnet_id      = aws_subnet.asg_subnet.id
+  subnet_id      = aws_subnet.asg_subnet_1.id
+  route_table_id = aws_route_table.private_rt.id
+}
+
+# Associate the second private subnet (Zone 2) with the private route table
+resource "aws_route_table_association" "private_assoc_2" {
+  subnet_id      = aws_subnet.asg_subnet_2.id
   route_table_id = aws_route_table.private_rt.id
 }
 

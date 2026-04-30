@@ -10,7 +10,7 @@ dependency "network" {
   config_path = "../network"
   mock_outputs = {
     vpc_id         = "vpc-mock"
-    asg_subnet_ids  = ["subnet-mock-asg-1", "subnet-mock-asg-2"]
+    asg_subnet_ids = ["subnet-mock-asg-1", "subnet-mock-asg-2"]
     alb_subnet_ids = ["subnet-mock-alb-1", "subnet-mock-alb-2"]
     asg_sg_id      = "sg-mock-asg"
     alb_sg_id      = "sg-mock-alb"
@@ -36,7 +36,7 @@ inputs = {
 
   # Від мережі
   vpc_id         = dependency.network.outputs.vpc_id
-  asg_subnet_ids  = dependency.network.outputs.asg_subnet_ids
+  asg_subnet_ids = dependency.network.outputs.asg_subnet_ids
   alb_subnet_ids = dependency.network.outputs.alb_subnet_ids
   asg_sg_id      = dependency.network.outputs.asg_sg_id
   alb_sg_id      = dependency.network.outputs.alb_sg_id

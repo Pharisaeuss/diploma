@@ -121,3 +121,24 @@ resource "aws_cloudwatch_dashboard" "main" {
     ]
   })
 }
+
+# Record ASG name
+resource "aws_ssm_parameter" "asg_name_record" {
+  name  = "/${var.env}/app/asg_name"
+  type  = "String"
+  value = var.asg_name 
+}
+
+# Record DB identifier 
+resource "aws_ssm_parameter" "db_identifier_record" {
+  name  = "/${var.env}/app/db_identifier"
+  type  = "String"
+  value = var.db_identifier
+}
+
+# Record ALB suffix 
+resource "aws_ssm_parameter" "alb_suffix_record" {
+  name  = "/${var.env}/app/alb_suffix"
+  type  = "String"
+  value = var.alb_arn_suffix
+}

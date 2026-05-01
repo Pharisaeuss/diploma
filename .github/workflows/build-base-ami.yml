@@ -60,12 +60,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        environment: [dev, stage, prod]
+        environment: [dev] #, stage, prod]
 
     steps:
       - name: Dispatch build-app-ami for ${{ matrix.environment }}
         uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.CI_PAT }}
           script: |
             await github.rest.actions.createWorkflowDispatch({
               owner:       context.repo.owner,

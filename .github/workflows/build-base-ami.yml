@@ -13,7 +13,7 @@ on:
     paths:
       # Trigger ONLY when packages or the base infra layer changes.
       - 'ansible/base/**'
-      - 'packer/base-ami_pkr.hcl'
+      - 'packer/base-ami.pkr.hcl'
 
 env:
   AWS_REGION: "eu-central-1"
@@ -43,15 +43,15 @@ jobs:
 
       - name: Packer Init
         working-directory: ./packer
-        run: packer init base-ami_pkr.hcl
+        run: packer init base-ami.pkr.hcl
 
       - name: Packer Validate
         working-directory: ./packer
-        run: packer validate base-ami_pkr.hcl
+        run: packer validate base-ami.pkr.hcl
 
       - name: Packer Build
         working-directory: ./packer
-        run: packer build base-ami_pkr.hcl
+        run: packer build base-ami.pkr.hcl
 
   # Automatically kick the App AMI build with the fresh base
   trigger-app-build:

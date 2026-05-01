@@ -26,6 +26,22 @@ resource "aws_iam_role_policy_attachment" "ssm_managed" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
+# ── 4. IAM policy: allow the instance to read its SSM namespace ───────────────
+data "aws_iam_policy_document" "ssm_read" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "ssm:GetParameter",
+      "ssm:GetParameters",
+      "ssm:GetParametersByPath",
+    ]
+    # Scope to this env only — no cross-env access
+    resources = [
+      "arn:aws:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:parameter/${var.env}/*"
+    ]
+  }
+}
+
 # Allow EC2 instances to read secrets from SSM Parameter Store 
 # resource "aws_iam_role_policy" "ssm_read_secrets" {
 #   name = "ssm-read-secrets-policy-${var.env}"

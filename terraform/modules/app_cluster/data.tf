@@ -4,7 +4,7 @@ data "aws_ami" "latest_golden_image" {
 
   filter {
     name   = "name"
-    values = ["streamlit-app-v*"]
+    values = ["fastapi-crud-${var.env}-*"]
   }
 }
 

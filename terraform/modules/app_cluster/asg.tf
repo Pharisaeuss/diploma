@@ -8,28 +8,32 @@ resource "aws_launch_template" "app_lt" {
     name = var.iam_instance_profile_name
   }
 
-  user_data = base64encode(<<EOF
-#!/bin/bash
-mkdir -p /etc/systemd/system/streamlit.service.d
-
-cat <<EOT > /etc/systemd/system/streamlit.service.d/env.conf
-[Service]
-Environment="ENV=${var.env}"
-Environment="AWS_DEFAULT_REGION=${var.region}"
-EOT
-
-systemctl daemon-reload
-systemctl restart streamlit
-EOF
-  )
-
-  tag_specifications {
-    resource_type = "instance"
-    tags = {
+  tags = {
       Name = "asg-instance-${var.env}"
     }
-  }
 }
+#   user_data = base64encode(<<EOF
+# #!/bin/bash
+# mkdir -p /etc/systemd/system/streamlit.service.d
+
+# cat <<EOT > /etc/systemd/system/streamlit.service.d/env.conf
+# [Service]
+# Environment="ENV=${var.env}"
+# Environment="AWS_DEFAULT_REGION=${var.region}"
+# EOT
+
+# systemctl daemon-reload
+# systemctl restart streamlit
+# EOF
+#   )
+
+#   tag_specifications {
+#     resource_type = "instance"
+#     tags = {
+#       Name = "asg-instance-${var.env}"
+#     }
+#   }
+# }
 
 resource "aws_autoscaling_group" "app_asg" {
   name             = "app-asg-${var.env}"
@@ -71,4 +75,16 @@ resource "aws_autoscaling_policy" "cpu_policy" {
     }
     target_value = 50.0
   }
+}
+
+resource "aws_ssm_parameter" "env" {
+  name  = "/${var.env}/app/env"
+  type  = "String"
+  value = var.env
+}
+
+resource "aws_ssm_parameter" "region" {
+  name  = "/${var.env}/app/region"
+  type  = "String"
+  value = var.region
 }

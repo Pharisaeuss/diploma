@@ -35,9 +35,14 @@
         owner: "{{ app_user }}"
         group: "{{ app_user }}"
         mode: "0755"
-      loop:
-        - "{{ app_dir }}"
-        - "{{ app_dir }}/static"
+
+    - name: Create static directory
+      file:
+        path: "{{ app_dir }}/static"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0755"
 
     - name: Create config directory (holds bootstrap + runtime env files)
       file:

@@ -13,11 +13,11 @@ on:
         default: 'dev'
         type: choice
         options: [dev, stage, prod]
-  push:
-    branches: [ "main" ]
-    paths:
-      - 'ansible/**'    
-      - 'packer/**'     
+  # push:
+  #   branches: [ "main" ]
+  #   paths:
+  #     - 'ansible/**'    
+  #     - 'packer/**'     
 
 env:
   AWS_REGION: "eu-central-1"

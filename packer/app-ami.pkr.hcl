@@ -26,12 +26,6 @@ variable "instance_type" {
   default = "t3.small"  
 }
 
-# The Base pipeline writes the AMI ID here after every base build.
-data "amazon-parameterstore" "base_ami_id" {
-  name   = "/base/app/ami_id"
-  region = var.aws_region != "" ? var.aws_region : "eu-central-1"
-}
-
 # Source: latest Base AMI 
 source "amazon-ebs" "app" {
   ami_name        = "fastapi-crud-${var.project_env}-v${formatdate("YYYYMMDD-hhmm", timestamp())}"
@@ -55,7 +49,7 @@ source "amazon-ebs" "app" {
     Name        = "fastapi-crud-${var.project_env}"
     Layer       = "app"
     Environment = var.project_env
-    BaseAmi     = data.amazon-parameterstore.base_ami_id.value
+    BaseAmi     = source_ami_filter.filters.name[0]
     ManagedBy   = "packer"
     BuildTime   = formatdate("YYYY-MM-DD hh:mm", timestamp())
   }

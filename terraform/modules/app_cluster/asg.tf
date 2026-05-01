@@ -12,28 +12,6 @@ resource "aws_launch_template" "app_lt" {
       Name = "asg-instance-${var.env}"
     }
 }
-#   user_data = base64encode(<<EOF
-# #!/bin/bash
-# mkdir -p /etc/systemd/system/streamlit.service.d
-
-# cat <<EOT > /etc/systemd/system/streamlit.service.d/env.conf
-# [Service]
-# Environment="ENV=${var.env}"
-# Environment="AWS_DEFAULT_REGION=${var.region}"
-# EOT
-
-# systemctl daemon-reload
-# systemctl restart streamlit
-# EOF
-#   )
-
-#   tag_specifications {
-#     resource_type = "instance"
-#     tags = {
-#       Name = "asg-instance-${var.env}"
-#     }
-#   }
-# }
 
 resource "aws_autoscaling_group" "app_asg" {
   name             = "app-asg-${var.env}"
@@ -53,8 +31,6 @@ resource "aws_autoscaling_group" "app_asg" {
     preferences {
       min_healthy_percentage = 50
     }
-    # Triggers after new AMI is available
-    #triggers = ["tag"]
   }
 
   tag {

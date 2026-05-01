@@ -26,6 +26,28 @@ resource "aws_iam_role_policy_attachment" "ssm_managed" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
+# Access to SSM Parameter Store for runtime configuration 
+resource "aws_iam_role_policy" "ssm_parameter_access" {
+  name = "ssm-parameter-access-${var.env}"
+  role = aws_iam_role.ec2_s3_role.id 
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter",
+          "ssm:GetParameters",
+          "ssm:GetParametersByPath"
+        ]
+        # Restrict to parameters under this env's namespace only
+        Resource = "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/${var.env}/*"
+      }
+    ]
+  })
+}
+
 # ── 4. IAM policy: allow the instance to read its SSM namespace ───────────────
 # data "aws_iam_policy_document" "ssm_read" {
 #   statement {

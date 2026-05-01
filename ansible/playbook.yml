@@ -1,10 +1,13 @@
-- name: Deploy Streamlit DevOps Dashboard
+- name: Deploy FastAPI CRUD Dashboard
   hosts: all
   become: true
   gather_facts: true
 
   vars:
-    app_dir: "/var/www/streamlit"
+    app_dir: "/var/www/fastapi-crud"
+    app_user: "ec2-user"
+    app_env:    "{{ lookup('env', 'PROJECT_ENV')        | default('dev') }}"
+    aws_region: "{{ lookup('env', 'AWS_DEFAULT_REGION') | default('eu-central-1') }}"
     # Ці дані ми отримаємо з Terraform outputs
     #db_host: "{{ lookup('env', 'RDS_ENDPOINT') }}" 
     # target_region: "{{ AWS_REGION | default('eu-central-1') }}"
@@ -21,20 +24,82 @@
 
     - name: Install system dependencies
       yum:
-        name: [python3, python3-pip, python3-devel, postgresql-devel, nginx, gcc]
+        name: [python3, python3-pip, python3-devel, postgresql-devel, nginx, gcc, awscli]
         state: present
+        update_cache: true
 
     - name: Create application directory
       file:
         path: "{{ app_dir }}"
         state: directory
-        owner: ec2-user
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0755"
+      loop:
+        - "{{ app_dir }}"
+        - "{{ app_dir }}/static"
 
-    - name: Copy requirements.txt to server
+    - name: Create config directory (holds bootstrap + runtime env files)
+      file:
+        path: /etc/fastapi-crud
+        state: directory
+        owner: root
+        group: "{{ app_user }}"
+        mode: "0750"
+
+    - name: Copy application source files
       copy:
-        src: templates/requirements.txt
-        dest: "{{ app_dir }}/requirements.txt"
-        owner: ec2-user
+        src: "app/{{ item }}"
+        dest: "{{ app_dir }}/{{ item }}"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0644"
+      loop:
+        - main.py
+        - database.py
+        - models.py
+        - schemas.py
+        - crud.py
+        - requirements.txt
+      notify: restart fastapi
+
+    - name: Copy frontend (static/index.html)
+      copy:
+        src: app/static/index.html
+        dest: "{{ app_dir }}/static/index.html"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0644"
+
+    # SSM bootstrap env 
+    # This file tells fetch-runtime-env.sh WHICH environment and region to use when calling SSM.  
+    - name: Write bootstrap.env (ENV + AWS_DEFAULT_REGION only)
+      copy:
+        content: |
+          # Written by Ansible at image bake / deploy time
+          # Contains only non-secret bootstrap config
+          ENV={{ app_env }}
+          AWS_DEFAULT_REGION={{ aws_region }}
+        dest: /etc/fastapi-crud/bootstrap.env
+        owner: root
+        group: "{{ app_user }}"
+        mode: "0640"
+
+    # SSM fetch script 
+    - name: Install fetch-runtime-env.sh
+      copy:
+        src: app/fetch-runtime-env.sh
+        dest: /usr/local/bin/fetch-runtime-env.sh
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install fastapi-crud-env.service (SSM oneshot)
+      copy:
+        src: app/fastapi-crud-env.service
+        dest: /etc/systemd/system/fastapi-crud-env.service
+        mode: "0644"
+      notify: reload systemd
 
     - name: Install Python dependencies
       pip:
@@ -42,27 +107,95 @@
         virtualenv: "{{ app_dir }}/venv"
         virtualenv_command: python3 -m venv
 
-    - name: Copy Streamlit App
-      copy:
-        src: templates/app.py
-        dest: "{{ app_dir }}/app.py"
-        owner: ec2-user
-      notify: restart streamlit
-
-    - name: Configure Streamlit systemd service
+    - name: Configure FastAPI systemd service
       template:
-        src: templates/streamlit_service.j2
-        dest: /etc/systemd/system/streamlit.service
-      notify: restart streamlit
+        src: app/fastapi_service.j2
+        dest: /etc/systemd/system/fastapi-crud.service
+        mode: "0644"
+      notify: restart fastapi
 
-    - name: Configure Nginx as Reverse Proxy
+    - name: Enable SSM env fetcher service
+      systemd:
+        name: fastapi-crud-env
+        enabled: true
+        daemon_reload: true
+ 
+    - name: Enable FastAPI service (starts after env fetcher)
+      systemd:
+        name: fastapi-crud
+        enabled: true
+        daemon_reload: true
+
+    # ── NOTE: We do NOT 'state: started' here during Packer bake 
+    #    During AMI build there is no RDS to connect to, so starting the app
+    #    would fail.  The service is *enabled* — it starts automatically on first
+    #    EC2 boot when SSM params are available.
+
+    - name: Start services (live deploy only — skip during Packer bake)
+      systemd:
+        name: "{{ item }}"
+        state: started
+        daemon_reload: true
+      loop:
+        - fastapi-crud-env
+        - fastapi-crud
+      when: start_services | default(false) | bool
+
+    # ── 8. Nginx reverse proxy ─────────────────────────────────────────────────
+    - name: Remove default Nginx site
+      file:
+        path: /etc/nginx/conf.d/default.conf
+        state: absent
+      notify: restart nginx
+ 
+    - name: Configure Nginx reverse proxy
       template:
         src: templates/nginx_app_conf.j2
-        dest: /etc/nginx/conf.d/streamlit.conf
+        dest: /etc/nginx/conf.d/fastapi-crud.conf
+        mode: "0644"
       notify: restart nginx
+ 
+    - name: Enable Nginx
+      systemd:
+        name: nginx
+        enabled: true
+        state: started
+        daemon_reload: true
 
+    # ── 10. Smoke test (live deploy only) ──────────────────────────────────────
+    - name: Wait for FastAPI health endpoint
+      uri:
+        url: "http://localhost:{{ app_port }}/health"
+        return_content: true
+        status_code: 200
+      register: health
+      retries: 12
+      delay: 5
+      until: health.status == 200
+      when: start_services | default(false) | bool
+ 
+    - name: Print health check result
+      debug:
+        msg: "Health: {{ health.json }}"
+      when:
+        - start_services | default(false) | bool
+        - health is defined
+
+  # ── Handlers ──────────────────────────────────────────────────────────────────
   handlers:
-    - name: restart streamlit
-      systemd: { name: streamlit, state: restarted, enabled: yes, daemon_reload: yes }
+    - name: reload systemd
+      systemd:
+        daemon_reload: true
+ 
+    - name: restart fastapi
+      systemd:
+        name: fastapi-crud
+        state: restarted
+        enabled: true
+        daemon_reload: true
+ 
     - name: restart nginx
-      systemd: { name: nginx, state: restarted, enabled: yes, daemon_reload: yes }
+      systemd:
+        name: nginx
+        state: restarted
+        enabled: true

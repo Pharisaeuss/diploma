@@ -65,7 +65,7 @@ build {
   sources = ["source.amazon-ebs.app"]
 
   provisioner "ansible" {
-    playbook_file = "../ansible/app/playbook.yml"
+    playbook_file = "../ansible/deploy_app/playbook.yml"
     user          = "ec2-user"
     use_proxy     = false
 

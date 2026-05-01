@@ -49,7 +49,8 @@ source "amazon-ebs" "app" {
     Name        = "fastapi-crud-${var.project_env}"
     Layer       = "app"
     Environment = var.project_env
-    BaseAmi     = source_ami_filter.filters.name[0]
+    BaseAmi     = "{{ .SourceAMI }}"
+    BaseAmiName = "{{ .SourceAMIName }}"
     ManagedBy   = "packer"
     BuildTime   = formatdate("YYYY-MM-DD hh:mm", timestamp())
   }

@@ -145,7 +145,7 @@
       loop:
         - fastapi-crud-env
         - fastapi-crud
-      when: start_services | default(false) | bool
+      when: start_services | default(true) | bool
 
     # ── 8. Nginx reverse proxy ─────────────────────────────────────────────────
     - name: Remove default Nginx site
@@ -178,13 +178,13 @@
       retries: 12
       delay: 5
       until: health.status == 200
-      when: start_services | default(false) | bool
+      when: start_services | default(true) | bool
  
     - name: Print health check result
       debug:
         msg: "Health: {{ health.json }}"
       when:
-        - start_services | default(false) | bool
+        - start_services | default(true) | bool
         - health is defined
 
   # ── Handlers ──────────────────────────────────────────────────────────────────
@@ -199,11 +199,11 @@
         state: restarted
         enabled: true
         daemon_reload: true
-      when: start_services | default(false) | bool
+      when: start_services | default(true) | bool
  
     - name: restart nginx
       systemd:
         name: nginx
         state: restarted
         enabled: true
-      when: start_services | default(false) | bool
+      when: start_services | default(true) | bool

@@ -42,7 +42,7 @@ resource "aws_iam_role_policy" "ssm_parameter_access" {
           "ssm:GetParametersByPath"
         ]
         # Restrict to parameters under this env's namespace only
-        Resource = "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/${var.env}/*"
+        Resource = "arn:aws:ssm:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:parameter/${var.env}/*"
       }
     ]
   })

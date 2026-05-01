@@ -66,3 +66,9 @@ resource "aws_ssm_parameter" "db_endpoint_record" {
   value     = aws_db_instance.postgres.address
   overwrite = true
 }
+
+resource "aws_ssm_parameter" "db_port_record" {
+  name  = "/${var.env}/database/port"
+  type  = "String"
+  value = aws_db_instance.postgres.port
+}

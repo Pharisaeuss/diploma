@@ -156,7 +156,7 @@
  
     - name: Configure Nginx reverse proxy
       template:
-        src: templates/nginx_app_conf.j2
+        src: app/nginx_app_conf.j2
         dest: /etc/nginx/conf.d/fastapi-crud.conf
         mode: "0644"
       notify: restart nginx
@@ -165,7 +165,7 @@
       systemd:
         name: nginx
         enabled: true
-        state: started
+        state: "{{ 'started' if (start_services | default(true) | bool) else 'stopped' }}"
         daemon_reload: true
 
     # ── 10. Smoke test (live deploy only) ──────────────────────────────────────

@@ -3,6 +3,8 @@ Description=FastAPI CRUD App (uvicorn)
 # Wait for SSM env fetch to complete before starting
 After=network.target fastapi-crud-env.service
 Requires=fastapi-crud-env.service
+# Unit will not start until this file exists
+ConditionPathExists=/etc/fastapi-crud/runtime.env
 
 [Service]
 Type=simple
@@ -11,7 +13,8 @@ WorkingDirectory={{ app_dir }}
 
 # runtime.env is written by fastapi-crud-env.service (fetch-runtime-env.sh)
 # It contains DATABASE_URL, ENV, AWS_DEFAULT_REGION, etc.
-EnvironmentFile=/etc/fastapi-crud/runtime.env
+# Not found(-) → unit will fail to start, but no error will be logged
+EnvironmentFile=-/etc/fastapi-crud/runtime.env
 
 ExecStart={{ app_dir }}/venv/bin/uvicorn main:app \
     --host 127.0.0.1 \

@@ -199,9 +199,11 @@
         state: restarted
         enabled: true
         daemon_reload: true
+      when: start_services | default(false) | bool
  
     - name: restart nginx
       systemd:
         name: nginx
         state: restarted
         enabled: true
+      when: start_services | default(false) | bool

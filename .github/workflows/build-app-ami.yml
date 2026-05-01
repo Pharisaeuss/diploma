@@ -1,0 +1,66 @@
+name: Build App Image (Packer)
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for rebuild'
+        required: false
+        default: 'Manual rebuild'
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options: [dev, stage, prod]
+
+  push:
+    branches: ["main"]
+    paths:
+      - 'app/**'
+      - 'ansible/deploy-app/**'
+      - 'packer/app-ami.pkr.hcl'
+
+env:
+  AWS_REGION:   "eu-central-1"
+  PROJECT_ENV:  ${{ github.event.inputs.environment || 'dev' }}
+
+jobs:
+  build-app:
+    name: 'Packer — App AMI (${{ github.event.inputs.environment || ''dev'' }})'
+    runs-on: ubuntu-latest
+
+    # permissions:
+    #   id-token: write
+    #   contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Setup Packer
+        uses: hashicorp/setup-packer@main
+
+      - name: Packer Init
+        working-directory: ./packer
+        run: packer init app-ami.pkr.hcl
+
+      - name: Packer Validate
+        working-directory: ./packer
+        run: packer validate app-ami.pkr.hcl
+        env:
+          PROJECT_ENV: ${{ env.PROJECT_ENV }}
+
+      - name: Packer Build
+        working-directory: ./packer
+        run: packer build app-ami.pkr.hcl
+        env:
+          PROJECT_ENV: ${{ env.PROJECT_ENV }}
+          AWS_REGION:  ${{ env.AWS_REGION }}

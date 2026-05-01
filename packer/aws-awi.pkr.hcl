@@ -32,7 +32,7 @@ source "amazon-ebs" "fastapi_app" {
   instance_type = var.instance_type
   region        = var.aws_region != "" ? var.aws_region : "eu-central-1"
 
-  ami_description = "FastAPI CRUD golden image — env=${var.project_env}"
+  ami_description = "FastAPI CRUD golden image env=${var.project_env}"
   tags = {
     Name        = "fastapi-crud-${var.project_env}"
     Environment = var.project_env

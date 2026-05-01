@@ -62,7 +62,7 @@ build {
     user          = "ec2-user"
     use_proxy     = false
     ansible_env_vars = [
-      "ANSIBLE_HOST_KEY_CHECKING=False"
+      "ANSIBLE_HOST_KEY_CHECKING=False",
       "PROJECT_ENV=${var.project_env}",
        "AWS_DEFAULT_REGION=${var.aws_region != "" ? var.aws_region : "eu-central-1"}",
     ]

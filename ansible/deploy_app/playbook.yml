@@ -13,7 +13,7 @@
   tasks:
     - name: Copy application source files
       copy:
-        src: "../../app/{{ item }}"
+        src: "../app/{{ item }}"
         dest: "{{ app_dir }}/{{ item }}"
         owner: "{{ app_user }}"
         group: "{{ app_user }}"

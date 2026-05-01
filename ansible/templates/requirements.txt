@@ -1,4 +1,0 @@
-streamlit==1.32.0
-psycopg2-binary==2.9.9
-boto3==1.28.57
-pandas==2.2.1

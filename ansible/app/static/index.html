@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FastAPI CRUD Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:       #0a0a0f;
+    --surface:  #111118;
+    --border:   #1e1e2e;
+    --accent:   #7c6af7;
+    --accent2:  #3ecfcf;
+    --danger:   #f7526a;
+    --success:  #3de89e;
+    --warn:     #f7b731;
+    --text:     #e2e2f0;
+    --muted:    #6b6b8a;
+    --mono:     'DM Mono', monospace;
+    --sans:     'Syne', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,106,247,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,106,247,.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Header ── */
+  header {
+    position: relative;
+    z-index: 10;
+    padding: 28px 40px 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .logo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .logo-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .logo h1 {
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1;
+    background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── Health Pill ── */
+  #health-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 10px 18px;
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    transition: border-color .2s;
+  }
+
+  #health-pill:hover { border-color: var(--accent); }
+
+  .pulse {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+    position: relative;
+  }
+  .pulse.ok { background: var(--success); }
+  .pulse.ok::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    background: var(--success);
+    opacity: .3;
+    animation: ping 1.5s ease-in-out infinite;
+  }
+  .pulse.err { background: var(--danger); }
+
+  @keyframes ping {
+    0%   { transform: scale(1); opacity: .4; }
+    70%  { transform: scale(2); opacity: 0; }
+    100% { transform: scale(2); opacity: 0; }
+  }
+
+  /* ── Health Modal ── */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.7);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    width: min(480px, 90vw);
+    animation: slideUp .25s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .modal h2 { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+
+  .health-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  .health-row:last-child { border-bottom: none; }
+  .health-row .label { color: var(--muted); }
+  .health-val.ok  { color: var(--success); }
+  .health-val.err { color: var(--danger); }
+  .health-val.warn { color: var(--warn); }
+
+  /* ── Main layout ── */
+  main {
+    position: relative;
+    z-index: 10;
+    padding: 36px 40px;
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 28px;
+  }
+
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; }
+    header { padding: 20px 20px 0; }
+    main   { padding: 20px; }
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-title span { color: var(--accent); }
+
+  /* ── Form ── */
+  .form-group { margin-bottom: 16px; }
+
+  label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  input[type="text"], input[type="number"], textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color .2s;
+    resize: vertical;
+  }
+
+  input[type="text"]:focus,
+  input[type="number"]:focus,
+  textarea:focus { border-color: var(--accent); }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .toggle-row label { margin: 0; }
+
+  /* Toggle switch */
+  .switch { position: relative; width: 40px; height: 22px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; inset: 0;
+    background: var(--border);
+    border-radius: 100px;
+    cursor: pointer;
+    transition: .2s;
+  }
+  .slider::before {
+    content: '';
+    position: absolute;
+    width: 16px; height: 16px;
+    left: 3px; top: 3px;
+    background: var(--muted);
+    border-radius: 50%;
+    transition: .2s;
+  }
+  input:checked + .slider { background: var(--accent); }
+  input:checked + .slider::before {
+    transform: translateX(18px);
+    background: #fff;
+  }
+
+  /* ── Buttons ── */
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  button {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 13px;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: opacity .15s, transform .1s;
+  }
+  button:active { transform: scale(.97); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+
+  .btn-primary   { background: var(--accent);  color: #fff; }
+  .btn-secondary { background: var(--border);  color: var(--text); }
+  .btn-danger    { background: var(--danger);  color: #fff; }
+  .btn-success   { background: var(--success); color: #000; }
+
+  button:not(:disabled):hover { opacity: .85; }
+
+  /* ── Items table ── */
+  .items-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .count-badge {
+    background: var(--accent);
+    color: #fff;
+    border-radius: 100px;
+    padding: 2px 10px;
+    font-size: 12px;
+    font-family: var(--mono);
+  }
+
+  .item-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 520px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .item-list::-webkit-scrollbar { width: 4px; }
+  .item-list::-webkit-scrollbar-track { background: transparent; }
+  .item-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .item-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    transition: border-color .2s;
+    animation: fadeIn .3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .item-card:hover { border-color: var(--accent); }
+
+  .item-id {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    background: rgba(124,106,247,.12);
+    padding: 2px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+
+  .item-body { flex: 1; min-width: 0; }
+
+  .item-name {
+    font-weight: 700;
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .item-desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .item-meta {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--border);
+    color: var(--muted);
+  }
+
+  .tag.active   { background: rgba(61,232,158,.15); color: var(--success); }
+  .tag.inactive { background: rgba(247,82,106,.12); color: var(--danger); }
+  .tag.price    { background: rgba(62,207,207,.12); color: var(--accent2); }
+
+  .item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  .btn-icon {
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px;
+    padding: 0;
+    font-size: 14px;
+  }
+
+  .btn-edit   { background: rgba(124,106,247,.15); color: var(--accent); }
+  .btn-delete { background: rgba(247,82,106,.12); color: var(--danger); }
+  .btn-edit:hover   { background: rgba(124,106,247,.3) !important; opacity: 1 !important; }
+  .btn-delete:hover { background: rgba(247,82,106,.25) !important; opacity: 1 !important; }
+
+  /* ── Toast ── */
+  #toast-container {
+    position: fixed;
+    bottom: 28px; right: 28px;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+  }
+
+  .toast {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 13px;
+    font-family: var(--mono);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: toastIn .3s ease;
+    pointer-events: all;
+    max-width: 320px;
+  }
+
+  .toast.ok  { border-left: 3px solid var(--success); }
+  .toast.err { border-left: 3px solid var(--danger); }
+  .toast.inf { border-left: 3px solid var(--accent); }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  /* ── Empty state ── */
+  .empty {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .empty .icon { font-size: 36px; margin-bottom: 12px; }
+
+  /* ── Loading skeleton ── */
+  .skeleton {
+    background: linear-gradient(90deg, var(--border) 25%, #1e1e30 50%, var(--border) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 6px;
+    height: 16px;
+  }
+
+  @keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .method-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+  .POST   { background: rgba(61,232,158,.15); color: var(--success); }
+  .GET    { background: rgba(62,207,207,.15); color: var(--accent2); }
+  .PUT    { background: rgba(247,183,49,.15); color: var(--warn); }
+  .DELETE { background: rgba(247,82,106,.15); color: var(--danger); }
+
+  /* Editing mode highlight */
+  .card.editing { border-color: var(--warn); }
+  .editing-label {
+    display: none;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--warn);
+    margin-bottom: 12px;
+  }
+  .card.editing .editing-label { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="logo-tag">// FastAPI + SQLAlchemy</span>
+    <h1>CRUD Dashboard</h1>
+  </div>
+  <div id="health-pill" onclick="openHealth()">
+    <div class="pulse" id="health-dot"></div>
+    <span id="health-text" style="font-family:var(--mono);font-size:12px">Checking...</span>
+  </div>
+</header>
+
+<main>
+  <!-- Form Panel -->
+  <div class="card" id="form-card">
+    <div class="card-title"><span>01</span> Manage Item</div>
+
+    <div class="editing-label">✏️ Editing item #<span id="edit-id-label"></span> — submit to update</div>
+
+    <input type="hidden" id="edit-id"/>
+
+    <div class="form-group">
+      <label>Name *</label>
+      <input type="text" id="f-name" placeholder="Product name..."/>
+    </div>
+
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="f-desc" rows="3" placeholder="Optional description..."></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Price</label>
+      <input type="text" id="f-price" placeholder="e.g. 29.99"/>
+    </div>
+
+    <div class="toggle-row">
+      <label class="switch">
+        <input type="checkbox" id="f-active" checked/>
+        <span class="slider"></span>
+      </label>
+      <label>Active</label>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary" onclick="submitForm()">
+        <span id="submit-label">＋ Create Item</span>
+      </button>
+      <button class="btn-secondary" onclick="clearForm()" id="cancel-btn" style="display:none">✕ Cancel</button>
+    </div>
+  </div>
+
+  <!-- Items List Panel -->
+  <div class="card">
+    <div class="items-header">
+      <div class="card-title" style="margin:0"><span>02</span> Items</div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <span class="count-badge" id="count">0</span>
+        <button class="btn-secondary" onclick="loadItems()" style="padding:6px 14px;font-size:12px">↻ Refresh</button>
+      </div>
+    </div>
+
+    <!-- Endpoint legend -->
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;font-family:var(--mono);font-size:11px;color:var(--muted)">
+      <span><span class="method-badge GET">GET</span> /items</span>
+      <span><span class="method-badge POST">POST</span> /items</span>
+      <span><span class="method-badge PUT">PUT</span> /items/{id}</span>
+      <span><span class="method-badge DELETE">DELETE</span> /items/{id}</span>
+    </div>
+
+    <div class="item-list" id="item-list">
+      <div class="empty"><div class="icon">◌</div>Loading items...</div>
+    </div>
+  </div>
+</main>
+
+<!-- Health Modal -->
+<div class="modal-backdrop" id="health-modal" onclick="closeHealth(event)">
+  <div class="modal">
+    <h2>Health Check <span style="font-family:var(--mono);font-size:14px;color:var(--muted)">/health</span></h2>
+    <div id="health-body">
+      <div class="skeleton" style="margin-bottom:12px"></div>
+      <div class="skeleton" style="margin-bottom:12px;width:70%"></div>
+      <div class="skeleton" style="width:50%"></div>
+    </div>
+    <button class="btn-secondary" style="margin-top:20px;width:100%" onclick="closeHealth()">Close</button>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<script>
+const API = '';  // same origin; change to http://localhost:8000 for dev if needed
+
+// ── Toast ──────────────────────────────────────────────────────────────
+function toast(msg, type = 'ok') {
+  const el = document.createElement('div');
+  const icons = { ok: '✓', err: '✗', inf: 'ℹ' };
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ── Health ─────────────────────────────────────────────────────────────
+async function checkHealth(silent = false) {
+  try {
+    const r = await fetch(`${API}/health`);
+    const d = await r.json();
+    const dot  = document.getElementById('health-dot');
+    const txt  = document.getElementById('health-text');
+    const ok   = d.status === 'ok';
+    dot.className = 'pulse ' + (ok ? 'ok' : 'err');
+    txt.textContent = ok ? `DB OK · ${d.db_latency_ms}ms` : 'DB Error';
+    return d;
+  } catch (e) {
+    document.getElementById('health-dot').className = 'pulse err';
+    document.getElementById('health-text').textContent = 'Offline';
+    return null;
+  }
+}
+
+async function openHealth() {
+  document.getElementById('health-modal').classList.add('open');
+  const d = await checkHealth();
+  const body = document.getElementById('health-body');
+  if (!d) {
+    body.innerHTML = `<div class="health-row"><span class="label">status</span><span class="health-val err">unreachable</span></div>`;
+    return;
+  }
+  const dbOk = d.database === 'healthy';
+  body.innerHTML = `
+    <div class="health-row"><span class="label">status</span>
+      <span class="health-val ${d.status==='ok'?'ok':'err'}">${d.status}</span></div>
+    <div class="health-row"><span class="label">database</span>
+      <span class="health-val ${dbOk?'ok':'err'}">${d.database}</span></div>
+    <div class="health-row"><span class="label">db_latency</span>
+      <span class="health-val ${d.db_latency_ms<50?'ok':'warn'}">${d.db_latency_ms} ms</span></div>
+    <div class="health-row"><span class="label">version</span>
+      <span class="health-val">${d.version}</span></div>`;
+}
+
+function closeHealth(e) {
+  if (!e || e.target === document.getElementById('health-modal'))
+    document.getElementById('health-modal').classList.remove('open');
+}
+
+// ── Load Items ─────────────────────────────────────────────────────────
+async function loadItems() {
+  const list = document.getElementById('item-list');
+  list.innerHTML = `<div class="empty"><div class="skeleton" style="height:60px;margin-bottom:10px"></div>
+                    <div class="skeleton" style="height:60px;margin-bottom:10px"></div>
+                    <div class="skeleton" style="height:60px"></div></div>`;
+  try {
+    const r = await fetch(`${API}/items`);
+    if (!r.ok) throw new Error(await r.text());
+    const items = await r.json();
+    document.getElementById('count').textContent = items.length;
+    if (!items.length) {
+      list.innerHTML = `<div class="empty"><div class="icon">◌</div>No items yet. Create one!</div>`;
+      return;
+    }
+    list.innerHTML = '';
+    items.forEach(item => list.appendChild(buildCard(item)));
+  } catch (e) {
+    list.innerHTML = `<div class="empty"><div class="icon">⚠</div>${e.message}</div>`;
+    toast('Failed to load items', 'err');
+  }
+}
+
+function buildCard(item) {
+  const div = document.createElement('div');
+  div.className = 'item-card';
+  div.id = `item-${item.id}`;
+  div.innerHTML = `
+    <span class="item-id">#${item.id}</span>
+    <div class="item-body">
+      <div class="item-name">${escHtml(item.name)}</div>
+      ${item.description ? `<div class="item-desc">${escHtml(item.description)}</div>` : ''}
+      <div class="item-meta">
+        <span class="tag ${item.is_active?'active':'inactive'}">${item.is_active?'active':'inactive'}</span>
+        ${item.price ? `<span class="tag price">$${escHtml(item.price)}</span>` : ''}
+        ${item.created_at ? `<span class="tag">${fmtDate(item.created_at)}</span>` : ''}
+      </div>
+    </div>
+    <div class="item-actions">
+      <button class="btn-icon btn-edit" title="Edit" onclick="editItem(${item.id})">✎</button>
+      <button class="btn-icon btn-delete" title="Delete" onclick="deleteItem(${item.id})">✕</button>
+    </div>`;
+  return div;
+}
+
+// ── Create / Update ────────────────────────────────────────────────────
+async function submitForm() {
+  const name  = document.getElementById('f-name').value.trim();
+  if (!name) { toast('Name is required', 'err'); return; }
+
+  const payload = {
+    name,
+    description: document.getElementById('f-desc').value.trim() || null,
+    price:       document.getElementById('f-price').value.trim() || null,
+    is_active:   document.getElementById('f-active').checked
+  };
+
+  const editId = document.getElementById('edit-id').value;
+  const url    = editId ? `${API}/items/${editId}` : `${API}/items`;
+  const method = editId ? 'PUT' : 'POST';
+
+  try {
+    const r = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) throw new Error(await r.text());
+    toast(editId ? `Item #${editId} updated` : 'Item created!', 'ok');
+    clearForm();
+    loadItems();
+  } catch (e) {
+    toast(`Error: ${e.message}`, 'err');
+  }
+}
+
+// ── Edit ───────────────────────────────────────────────────────────────
+async function editItem(id) {
+  try {
+    const r = await fetch(`${API}/items/${id}`);
+    if (!r.ok) throw new Error('Not found');
+    const item = await r.json();
+    document.getElementById('f-name').value   = item.name;
+    document.getElementById('f-desc').value   = item.description || '';
+    document.getElementById('f-price').value  = item.price || '';
+    document.getElementById('f-active').checked = item.is_active;
+    document.getElementById('edit-id').value  = item.id;
+    document.getElementById('edit-id-label').textContent = item.id;
+    document.getElementById('submit-label').textContent  = '✓ Update Item';
+    document.getElementById('cancel-btn').style.display  = 'inline-flex';
+    document.getElementById('form-card').classList.add('editing');
+    document.getElementById('f-name').focus();
+    toast(`Editing item #${id}`, 'inf');
+  } catch (e) {
+    toast(`Error: ${e.message}`, 'err');
+  }
+}
+
+function clearForm() {
+  ['f-name','f-desc','f-price','edit-id'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-active').checked = true;
+  document.getElementById('submit-label').textContent = '＋ Create Item';
+  document.getElementById('cancel-btn').style.display = 'none';
+  document.getElementById('form-card').classList.remove('editing');
+  document.getElementById('edit-id-label').textContent = '';
+}
+
+// ── Delete ─────────────────────────────────────────────────────────────
+async function deleteItem(id) {
+  if (!confirm(`Delete item #${id}?`)) return;
+  try {
+    const r = await fetch(`${API}/items/${id}`, { method: 'DELETE' });
+    if (!r.ok) throw new Error(await r.text());
+    toast(`Item #${id} deleted`, 'ok');
+    const el = document.getElementById(`item-${id}`);
+    if (el) { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => loadItems(), 300); }
+    else loadItems();
+  } catch (e) {
+    toast(`Error: ${e.message}`, 'err');
+  }
+}
+
+// ── Utilities ──────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function fmtDate(s) {
+  try { return new Date(s).toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+  catch { return s; }
+}
+
+// ── Init ───────────────────────────────────────────────────────────────
+loadItems();
+checkHealth();
+setInterval(() => checkHealth(true), 30000);
+</script>
+</body>
+</html>

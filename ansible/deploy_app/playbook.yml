@@ -28,7 +28,7 @@
 
     - name: Copy frontend (static/index.html)
       copy:
-        src: ../../app/static/index.html
+        src: ../app/static/index.html
         dest: "{{ app_dir }}/static/index.html"
         owner: "{{ app_user }}"
         group: "{{ app_user }}"

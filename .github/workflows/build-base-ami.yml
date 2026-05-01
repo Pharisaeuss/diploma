@@ -1,0 +1,79 @@
+name: Build Base Image (Packer)
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for base rebuild'
+        required: false
+        default: 'Manual rebuild'
+
+  push:
+    branches: ["main"]
+    paths:
+      # Trigger ONLY when packages or the base infra layer changes.
+      - 'ansible/base/**'
+      - 'packer/base-ami_pkr.hcl'
+
+env:
+  AWS_REGION: "eu-central-1"
+
+jobs:
+  build-base:
+    name: 'Packer — Base AMI'
+    runs-on: ubuntu-latest
+
+    # permissions:
+    #   id-token: write
+    #   contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Setup Packer
+        uses: hashicorp/setup-packer@main
+
+      - name: Packer Init
+        working-directory: ./packer
+        run: packer init base-ami_pkr.hcl
+
+      - name: Packer Validate
+        working-directory: ./packer
+        run: packer validate base-ami_pkr.hcl
+
+      - name: Packer Build
+        working-directory: ./packer
+        run: packer build base-ami_pkr.hcl
+
+  # Automatically kick the App AMI build with the fresh base
+  trigger-app-build:
+    name: 'Trigger App AMI rebuild on new base'
+    needs: build-base
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: [dev, stage, prod]
+
+    steps:
+      - name: Dispatch build-app-ami for ${{ matrix.environment }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner:       context.repo.owner,
+              repo:        context.repo.repo,
+              workflow_id: 'build-app-ami.yml',
+              ref:         'main',
+              inputs: {
+                environment: '${{ matrix.environment }}',
+                reason:      'Triggered by new base AMI'
+              }
+            });

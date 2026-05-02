@@ -9,10 +9,10 @@ terraform {
 dependency "iam" {
   config_path = "../iam"
   mock_outputs = {
-    ec2_role_id = "mock-role-id"
+    app_node_role_id = "mock-role-id"
   }
 }
 
 inputs = {
-  ec2_role_id = dependency.iam.outputs.ec2_role_id
+  app_node_role_id = dependency.iam.outputs.app_node_role_id
 }

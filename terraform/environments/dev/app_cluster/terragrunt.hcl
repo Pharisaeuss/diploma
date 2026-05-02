@@ -20,7 +20,7 @@ dependency "network" {
 dependency "iam" {
   config_path = "../iam"
   mock_outputs = {
-    ec2_instance_profile_name = "mock-instance-profile"
+    app_node_instance_profile_name = "mock-instance-profile"
   }
 }
 
@@ -42,7 +42,7 @@ inputs = {
   alb_sg_id      = dependency.network.outputs.alb_sg_id
 
   # Від IAM
-  iam_instance_profile_name = dependency.iam.outputs.ec2_instance_profile_name
+  iam_instance_profile_name = dependency.iam.outputs.app_node_instance_profile_name
 
   # Від Storage
   alb_logs_bucket_id = dependency.storage.outputs.alb_logs_bucket_id

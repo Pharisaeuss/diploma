@@ -31,7 +31,7 @@ resource "aws_s3_bucket" "ansible_ssm_bucket" {
 # Allow EC2 server to read and write to this bucket
 resource "aws_iam_role_policy" "ssm_s3_policy" {
   name = "ansible_ssm_s3_policy"
-  role = var.ec2_role_id
+  role = var.app_node_role_id
 
   policy = jsonencode({
     Version = "2012-10-17"

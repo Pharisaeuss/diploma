@@ -1,7 +1,7 @@
 # Log group
 resource "aws_cloudwatch_log_group" "app_logs" {
   name              = "/aws/ec2/diploma-app-${var.env}"
-  retention_in_days = 14 # Зберігаємо логи 14 днів для оптимізації витрат
+  retention_in_days = 14 # Retain logs for 14 days
 
   tags = {
     Environment = var.env
@@ -52,7 +52,7 @@ resource "aws_cloudwatch_metric_alarm" "high_latency" {
   namespace           = "AWS/ApplicationELB"
   period              = 60
   statistic           = "Average"
-  threshold           = 2.0 # Тривога, якщо середня відповідь довша за 2 секунди
+  threshold           = 2.0 # Alarm if average response time exceeds 2 seconds
   alarm_description   = "Triggered when backend response time exceeds 2 seconds"
 
   dimensions = {
@@ -69,7 +69,7 @@ resource "aws_cloudwatch_metric_alarm" "high_db_connections" {
   namespace           = "AWS/RDS"
   period              = 60
   statistic           = "Average"
-  threshold           = 50 # Залежить від лімітів t3.micro
+  threshold           = 50 
   alarm_description   = "Triggered on unusually high DB connection count"
 
   dimensions = {
@@ -79,7 +79,7 @@ resource "aws_cloudwatch_metric_alarm" "high_db_connections" {
 
 # Dashboard for AWS CloudWatch
 resource "aws_cloudwatch_dashboard" "main" {
-  dashboard_name = "DevOps-Diploma-Dashboard-${var.env}"
+  dashboard_name = "Infrastructure-Monitoring-Dashboard-${var.env}"
 
   dashboard_body = jsonencode({
     widgets = [
@@ -116,6 +116,61 @@ resource "aws_cloudwatch_dashboard" "main" {
           title   = "ALB Total HTTP Requests"
           period  = 60
           stat    = "Sum"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 6
+        width  = 12
+        height = 6
+        properties = {
+          metrics = [
+            ["AWS/ApplicationELB", "HTTPCode_Target_5XX_Count", "LoadBalancer", var.alb_arn_suffix]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.region
+          title   = "ALB 5XX Server Errors"
+          period  = 60
+          stat    = "Sum"
+          yAxis   = { left = { min = 0 } }
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 6
+        width  = 12
+        height = 6
+        properties = {
+          metrics = [
+            ["AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", var.alb_arn_suffix]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.region
+          title   = "ALB Target Response Time (Seconds)"
+          period  = 60
+          stat    = "Average"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 12
+        width  = 12
+        height = 6
+        properties = {
+          metrics = [
+            ["AWS/RDS", "DatabaseConnections", "DBInstanceIdentifier", var.db_identifier]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.region
+          title   = "RDS Active Database Connections"
+          period  = 60
+          stat    = "Average"
         }
       }
     ]

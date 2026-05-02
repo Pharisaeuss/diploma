@@ -1,7 +1,7 @@
-output "ec2_role_id" {
-  value = aws_iam_role.ec2_s3_role.id
+output "app_node_role_id" {
+  value = aws_iam_role.app_node_role.id
 }
 
-output "ec2_instance_profile_name" {
-  value = aws_iam_instance_profile.ec2_s3_profile.name
+output "app_node_instance_profile_name" {
+  value = aws_iam_instance_profile.app_node_profile.name
 }

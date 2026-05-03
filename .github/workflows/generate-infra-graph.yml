@@ -42,18 +42,10 @@ jobs:
           sudo apt-get install -y graphviz
 
       # ── 2. Download every state file for this environment from S3 ──────────
-      - name: Download state files from S3
+      - name: Download State Files from S3
         run: |
           mkdir -p ./downloaded-states
-          # Each Terragrunt module writes its state to:
-          #   s3://<bucket>/<module-path>/<env>/terraform.tfstate
-          # We pull everything that matches the current env.
-          aws s3 sync "s3://$TG_STATE_BUCKET/" ./downloaded-states \
-            --exclude "*" \
-            --include "*/${TG_ENV}/terraform.tfstate"
-
-          echo "--- state files downloaded ---"
-          find ./downloaded-states -name "*.tfstate" | sort
+          aws s3 sync s3://${{ env.TG_STATE_BUCKET }}/ ./downloaded-states --exclude "*" --include "*${{ env.TG_ENV }}/*.tfstate"
 
       # ── 3. Generate the merged diagram via the Python script ───────────────
       - name: Generate merged infrastructure diagram

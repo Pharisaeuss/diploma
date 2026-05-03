@@ -88,18 +88,35 @@ jobs:
         working-directory: ./terraform/environments/${{ env.TG_ENV }}
         run: terragrunt run-all apply --terragrunt-non-interactive
         
-      - name: Install Graphviz (for dot command)
+# 1. Встановлення системних залежностей (Graphviz для рендерингу)
+      - name: Install Graphviz
         run: sudo apt-get update && sudo apt-get install -y graphviz
 
-# (Твій попередній крок генерації графа)
-      - name: Generate Infrastructure Graph
-        run: terragrunt graph-dependencies | dot -Tsvg > architecture_modules.svg
-        working-directory: ./terraform/environments/${{ env.TG_ENV }}
+      # 2. Встановлення Inframap (утиліта для парсингу файлів стану)
+      - name: Install Inframap
+        run: |
+          curl -sL https://github.com/cycloidio/inframap/releases/download/v0.7.0/inframap-linux-amd64.tar.gz | tar xz
+          sudo mv inframap-linux-amd64 /usr/local/bin/inframap
 
-      # Збереження артефакту
+      # 3. Синхронізація файлів стану безпосередньо з AWS S3
+      - name: Download State Files from S3
+        # Викачуємо всі .tfstate файли для конкретного середовища (dev/stage/prod)
+        run: |
+          mkdir -p ./downloaded-states
+          aws s3 sync s3://${{ env.TG_STATE_BUCKET }}/ ./downloaded-states --exclude "*" --include "*${{ env.TG_ENV }}/*.tfstate"
+          
+      # 4. Генерація детальної ресурсної архітектури
+      - name: Generate Detailed Infrastructure Graph
+        run: |
+          # Знаходимо всі викачані файли стану і передаємо їх в inframap
+          STATES=$(find ./downloaded-states -name "*.tfstate")
+          inframap generate $STATES > my_infra.dot
+          dot -Tsvg my_infra.dot > detailed_architecture_${{ env.TG_ENV }}.svg
+
+      # 5. Збереження артефакту
       - name: Upload Architecture Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: aws-infrastructure-graph
-          path: ./terraform/environments/${{ env.TG_ENV }}/architecture_modules.svg
-          retention-days: 2 # Оптимізуємо місце, зберігаємо 2 тижні
+          name: detailed-aws-infrastructure-${{ env.TG_ENV }}
+          path: detailed_architecture_${{ env.TG_ENV }}.svg
+          retention-days: 2

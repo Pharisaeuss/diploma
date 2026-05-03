@@ -106,17 +106,28 @@ jobs:
           aws s3 sync s3://${{ env.TG_STATE_BUCKET }}/ ./downloaded-states --exclude "*" --include "*${{ env.TG_ENV }}/*.tfstate"
           
       # 4. Генерація детальної ресурсної архітектури
-      - name: Generate Detailed Infrastructure Graph
+# 4. Генерація детальної ресурсної архітектури для КОЖНОГО модуля
+      - name: Generate Detailed Infrastructure Graphs
         run: |
-          # Знаходимо всі викачані файли стану і передаємо їх в inframap
-          STATES=$(find ./downloaded-states -name "*.tfstate")
-          inframap generate $STATES > my_infra.dot
-          dot -Tsvg my_infra.dot > detailed_architecture_${{ env.TG_ENV }}.svg
+          # Створюємо директорію для готових графів
+          mkdir -p ./graphs
+          
+          # Проходимо циклом по кожному завантаженому файлу стану
+          find ./downloaded-states -name "*.tfstate" | while read state_file; do
+            # Витягуємо назву модуля з шляху (наприклад, 'network' або 'rds')
+            module_name=$(basename $(dirname "$state_file"))
+            
+            echo "Generating graph for module: $module_name"
+            
+            # Генеруємо граф для конкретного модуля
+            inframap generate "$state_file" > "my_infra_${module_name}.dot"
+            dot -Tsvg "my_infra_${module_name}.dot" > "./graphs/detailed_architecture_${module_name}_${{ env.TG_ENV }}.svg"
+          done
 
-      # 5. Збереження артефакту
-      - name: Upload Architecture Artifact
+      # 5. Збереження артефактів (всіх згенерованих схем)
+      - name: Upload Architecture Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: detailed-aws-infrastructure-${{ env.TG_ENV }}
-          path: detailed_architecture_${{ env.TG_ENV }}.svg
+          name: detailed-aws-infrastructure-graphs-${{ env.TG_ENV }}
+          path: ./graphs/*.svg
           retention-days: 2

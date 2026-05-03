@@ -87,3 +87,19 @@ jobs:
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         working-directory: ./terraform/environments/${{ env.TG_ENV }}
         run: terragrunt run-all apply --terragrunt-non-interactive
+        
+      - name: Install Graphviz (for dot command)
+        run: sudo apt-get update && sudo apt-get install -y graphviz
+
+# (Твій попередній крок генерації графа)
+      - name: Generate Infrastructure Graph
+        run: terragrunt graph-dependencies | dot -Tsvg > architecture_modules.svg
+        working-directory: ./terraform/environments/${{ env.TG_ENV }}
+
+      # Збереження артефакту
+      - name: Upload Architecture Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aws-infrastructure-graph
+          path: ./terraform/environments/${{ env.TG_ENV }}/architecture_modules.svg
+          retention-days: 2 # Оптимізуємо місце, зберігаємо 2 тижні

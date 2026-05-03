@@ -1,0 +1,93 @@
+name: Infrastructure Diagram
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment (dev / stage / prod)"
+        required: true
+        default: dev
+  push:
+    branches: [main]
+    paths:
+      - "**.tf"
+      - "**.hcl"
+
+env:
+  TG_ENV: ${{ github.event.inputs.environment || 'dev' }}
+  TG_STATE_BUCKET: tfstate-buckets3-2026
+  AWS_REGION: "eu-central-1"
+
+jobs:
+  generate-diagram:
+    name: Generate infrastructure diagram
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ── 1. Only Graphviz needed — no Inframap ──────────────────────────────
+      - name: Install Graphviz
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y graphviz
+
+      # ── 2. Download every state file for this environment from S3 ──────────
+      - name: Download state files from S3
+        run: |
+          mkdir -p ./downloaded-states
+          # Each Terragrunt module writes its state to:
+          #   s3://<bucket>/<module-path>/<env>/terraform.tfstate
+          # We pull everything that matches the current env.
+          aws s3 sync "s3://$TG_STATE_BUCKET/" ./downloaded-states \
+            --exclude "*" \
+            --include "*/${TG_ENV}/terraform.tfstate"
+
+          echo "--- state files downloaded ---"
+          find ./downloaded-states -name "*.tfstate" | sort
+
+      # ── 3. Generate the merged diagram via the Python script ───────────────
+      - name: Generate merged infrastructure diagram
+        run: |
+          mkdir -p ./graphs
+          python3 .github/scripts/generate_infra_graph.py \
+            --states-dir ./downloaded-states \
+            --output     ./graphs/infra_${TG_ENV}.dot \
+            --format     svg \
+            --env        "${TG_ENV}"
+
+      # ── 4. Also export a PNG (easier to view in GitHub UI) ─────────────────
+      - name: Render PNG copy
+        run: |
+          dot -Tpng \
+              -Gdpi=150 \
+              ./graphs/infra_${TG_ENV}.dot \
+              -o ./graphs/infra_${TG_ENV}.png
+
+      # ── 5. Upload both SVG and PNG as artifacts ────────────────────────────
+      - name: Upload diagram artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: infra-diagram-${{ env.TG_ENV }}
+          path: |
+            ./graphs/infra_${{ env.TG_ENV }}.svg
+            ./graphs/infra_${{ env.TG_ENV }}.png
+          retention-days: 14
+
+      # ── 6. (Optional) Commit SVG back to repo under docs/ ─────────────────
+      # Uncomment if you want the diagram versioned alongside your code.
+      # - name: Commit diagram to repo
+      #   uses: stefanzweifel/git-auto-commit-action@v5
+      #   with:
+      #     commit_message: "docs: update infra diagram for ${{ env.TG_ENV }}"
+      #     file_pattern: "docs/infra_*.svg docs/infra_*.png"
+      #     branch: main

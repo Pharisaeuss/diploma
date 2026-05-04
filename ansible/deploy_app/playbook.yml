@@ -7,6 +7,7 @@
     app_dir:    "/var/www/fastapi-crud"
     app_user:   "ec2-user"
     app_port:   8000
+    server_name: "_"
     app_env:    "{{ lookup('env', 'PROJECT_ENV')        | default('dev') }}"
     aws_region: "{{ lookup('env', 'AWS_DEFAULT_REGION') | default('eu-central-1') }}"
 

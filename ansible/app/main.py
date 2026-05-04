@@ -3,21 +3,64 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
+from contextlib import asynccontextmanager
 from typing import List
 import time
+import logging
 
 from database import engine, get_db, Base
 import models
 import schemas
 import crud
 
-# Create tables
-Base.metadata.create_all(bind=engine)
+logger = logging.getLogger(__name__)
+
+# ─── Startup: wait for RDS then create tables ─────────────────────────────────
+
+def _wait_for_db(retries: int = 20, delay: int = 10) -> None:
+    """Block until the DB accepts a connection or raise after retries."""
+    from sqlalchemy import text
+    from sqlalchemy.exc import OperationalError
+    import time as _time
+
+    for attempt in range(1, retries + 1):
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            logger.info("DB ready after %d attempt(s)", attempt)
+            return
+        except OperationalError as exc:
+            logger.warning(
+                "DB not ready (attempt %d/%d): %s — retrying in %ds",
+                attempt, retries, exc.args[0], delay
+            )
+            _time.sleep(delay)
+
+    raise RuntimeError(
+        f"Database did not become ready after {retries} attempts. "
+        "Check RDS status and security group rules."
+    )
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # ── startup ───────────────────────────────────────────────────────
+    logger.info("Waiting for database...")
+    _wait_for_db(retries=20, delay=10)   # waits up to ~3 min total
+    logger.info("Running create_all()")
+    Base.metadata.create_all(bind=engine)
+    logger.info("Application startup complete")
+    yield
+    # ── shutdown ──────────────────────────────────────────────────────
+    engine.dispose()
+    logger.info("Application shutdown complete")
+
 
 app = FastAPI(
     title="FastAPI CRUD with PostgreSQL",
     description="Simple CRUD API with SQLAlchemy and RDS PostgreSQL",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(

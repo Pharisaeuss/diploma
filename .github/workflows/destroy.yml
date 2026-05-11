@@ -18,7 +18,7 @@ on:
         default: 'NO'
 
 env:
-  AWS_REGION: "eu-central-1"
+  AWS_REGION: ${{ vars.AWS_REGION }}
   TG_ENV: ${{ github.event.inputs.environment }}
 
 permissions:

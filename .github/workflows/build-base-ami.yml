@@ -16,7 +16,7 @@ on:
       - 'packer/base-ami.pkr.hcl'
 
 env:
-  AWS_REGION: "eu-central-1"
+  AWS_REGION: ${{ vars.AWS_REGION }}
 
 permissions:
   id-token: write   
@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        environment: [dev] #, stage, prod]
+        environment: [dev, stage, prod]
 
     steps:
       - name: Dispatch build-app-ami for ${{ matrix.environment }}

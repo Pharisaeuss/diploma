@@ -9,14 +9,14 @@ resource "aws_launch_template" "app_lt" {
   }
 
   tags = {
-      Name = "asg-instance-${var.env}"
-    }
+    Name = "app-launch-template-${var.env}"
+  }
 }
 
 resource "aws_autoscaling_group" "app_asg" {
   name             = "app-asg-${var.env}"
-  desired_capacity = 2
-  max_size         = 4
+  desired_capacity = 3
+  max_size         = 5
   min_size         = 2
 
   vpc_zone_identifier = var.asg_subnet_ids
@@ -31,6 +31,12 @@ resource "aws_autoscaling_group" "app_asg" {
     preferences {
       min_healthy_percentage = 50
     }
+  }
+
+  tag {
+    key                 = "Name"
+    value               = "asg-${var.env}"
+    propagate_at_launch = true
   }
 
   tag {

@@ -1,209 +1,204 @@
-- name: Deploy FastAPI CRUD Dashboard
+- name: Show hosts discovered by AWS EC2 dynamic inventory
   hosts: all
-  become: true
-  gather_facts: true
-
-  vars:
-    app_dir: "/var/www/fastapi-crud"
-    app_user: "ec2-user"
-    app_port: 8000
-    app_env:    "{{ lookup('env', 'PROJECT_ENV')        | default('dev') }}"
-    aws_region: "{{ lookup('env', 'AWS_DEFAULT_REGION') | default('eu-central-1') }}"
-    # Ці дані ми отримаємо з Terraform outputs
-    #db_host: "{{ lookup('env', 'RDS_ENDPOINT') }}" 
-    # target_region: "{{ AWS_REGION | default('eu-central-1') }}"
-    # target_env: "{{ lookup('env', 'PROJECT_ENV') | default('dev') }}"
-    # app_s3_bucket: "{{ lookup('amazon.aws.aws_ssm', '/' + target_env + '/s3/app_bucket_name', region=target_region) }}"
-    # db_host: "{{ lookup('amazon.aws.aws_ssm', '/' + target_env + '/database/endpoint', region=target_region) }}"
-    # db_user: "{{ lookup('amazon.aws.aws_ssm', '/' + target_env + '/database/username', region=target_region) }}"
-    # db_password: "{{ lookup('amazon.aws.aws_ssm', '/' + target_env + '/database/password', region=target_region, decrypt=True) }}"
+  gather_facts: false   
 
   tasks:
-    # - name: Debug retrieved values
-    #   debug:
-    #     msg: "Ansible fetched Bucket: {{ app_s3_bucket }} and DB Host: {{ db_host }}, Region: {{ target_region }}, Env: {{ target_env }}"
+    - name: Print discovered EC2 instance metadata
+      debug:
+        msg:
+          - "Instance ID : {{ inventory_hostname }}"
+          - "Private IP  : {{ ansible_host }}"
+          - "Region      : {{ placement.region      | default('unknown') }}"
+          - "Instance type: {{ instance_type        | default('unknown') }}"
+          - "Tags        : {{ tags                  | default({}) }}"
 
-    - name: Install system dependencies
+- name: Apply base configuration to EC2 instances
+  hosts: all
+  become: true            
+  gather_facts: true      
+
+  vars:
+    project_env:  "{{ lookup('env', 'PROJECT_ENV')        | default('dev') }}"
+    aws_region:   "{{ lookup('env', 'AWS_DEFAULT_REGION') | default('eu-central-1') }}"
+    ntp_servers:
+      - 169.254.169.123   # Amazon Time Sync Service (preferred inside AWS)
+    ssh_banner: |
+      ########################################################
+      #  Managed by Ansible — unauthorised access forbidden  #
+      ########################################################
+
+  tasks:
+
+    - name: Update all installed packages to the latest version
       yum:
-        name: [python3, python3-pip, python3-devel, postgresql-devel, nginx, gcc, awscli]
-        state: present
+        name: "*"
+        state: latest
         update_cache: true
+      tags: [packages, update]
 
-    - name: Create application directory
-      file:
-        path: "{{ app_dir }}"
-        state: directory
-        owner: "{{ app_user }}"
-        group: "{{ app_user }}"
-        mode: "0755"
+    - name: Ensure common utilities are installed
+      yum:
+        name:
+          - curl
+          - wget
+          - unzip
+          - jq           # JSON parsing helper (useful for AWS CLI scripts)
+          - awscli
+          - htop
+          - net-tools
+          - chrony       
+        state: present
+      tags: [packages]
 
-    - name: Create static directory
-      file:
-        path: "{{ app_dir }}/static"
-        state: directory
-        owner: "{{ app_user }}"
-        group: "{{ app_user }}"
-        mode: "0755"
+    - name: Configure chrony to use Amazon Time Sync Service
+      lineinfile:
+        path: /etc/chrony.conf
+        regexp: "^server {{ item }}"
+        line: "server {{ item }} iburst prefer"
+        state: present
+      loop: "{{ ntp_servers }}"
+      notify: restart chrony
+      tags: [ntp]
 
-    - name: Create config directory (holds bootstrap + runtime env files)
-      file:
-        path: /etc/fastapi-crud
-        state: directory
-        owner: root
-        group: "{{ app_user }}"
-        mode: "0750"
+    - name: Enable and start chrony
+      systemd:
+        name: chronyd
+        enabled: true
+        state: started
+      tags: [ntp]
 
-    - name: Copy application source files
+    - name: Set SSH login banner
       copy:
-        src: "app/{{ item }}"
-        dest: "{{ app_dir }}/{{ item }}"
-        owner: "{{ app_user }}"
-        group: "{{ app_user }}"
-        mode: "0644"
-      loop:
-        - main.py
-        - database.py
-        - models.py
-        - schemas.py
-        - crud.py
-        - requirements.txt
-      notify: restart fastapi
-
-    - name: Copy frontend (static/index.html)
-      copy:
-        src: app/static/index.html
-        dest: "{{ app_dir }}/static/index.html"
-        owner: "{{ app_user }}"
-        group: "{{ app_user }}"
-        mode: "0644"
-
-    # SSM bootstrap env 
-    # This file tells fetch-runtime-env.sh WHICH environment and region to use when calling SSM.  
-    - name: Write bootstrap.env (ENV + AWS_DEFAULT_REGION only)
-      copy:
-        content: |
-          # Written by Ansible at image bake / deploy time
-          # Contains only non-secret bootstrap config
-          ENV={{ app_env }}
-          AWS_DEFAULT_REGION={{ aws_region }}
-        dest: /etc/fastapi-crud/bootstrap.env
-        owner: root
-        group: "{{ app_user }}"
-        mode: "0640"
-
-    # SSM fetch script 
-    - name: Install fetch-runtime-env.sh
-      copy:
-        src: app/fetch-runtime-env.sh
-        dest: /usr/local/bin/fetch-runtime-env.sh
+        content: "{{ ssh_banner }}"
+        dest: /etc/issue.net
         owner: root
         group: root
-        mode: "0755"
-
-    - name: Install fastapi-crud-env.service (SSM oneshot)
-      copy:
-        src: app/fastapi-crud-env.service
-        dest: /etc/systemd/system/fastapi-crud-env.service
         mode: "0644"
-      notify: reload systemd
+      tags: [ssh, hardening]
 
-    - name: Install Python dependencies
-      pip:
-        requirements: "{{ app_dir }}/requirements.txt"
-        virtualenv: "{{ app_dir }}/venv"
-        virtualenv_command: python3 -m venv
-
-    - name: Configure FastAPI systemd service
-      template:
-        src: app/fastapi_service.j2
-        dest: /etc/systemd/system/fastapi-crud.service
-        mode: "0644"
-      notify: restart fastapi
-
-    - name: Enable SSM env fetcher service
-      systemd:
-        name: fastapi-crud-env
-        enabled: true
-        daemon_reload: true
- 
-    - name: Enable FastAPI service (starts after env fetcher)
-      systemd:
-        name: fastapi-crud
-        enabled: true
-        daemon_reload: true
-
-    # ── NOTE: We do NOT 'state: started' here during Packer bake 
-    #    During AMI build there is no RDS to connect to, so starting the app
-    #    would fail.  The service is *enabled* — it starts automatically on first
-    #    EC2 boot when SSM params are available.
-
-    - name: Start services (live deploy only — skip during Packer bake)
-      systemd:
-        name: "{{ item }}"
-        state: started
-        daemon_reload: true
+    - name: Harden SSH daemon settings
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+        validate: "/usr/sbin/sshd -t -f %s"
       loop:
-        - fastapi-crud-env
-        - fastapi-crud
-      when: start_services | default(true) | bool
+        - { regexp: "^#?Banner",               line: "Banner /etc/issue.net" }
+        - { regexp: "^#?PermitRootLogin",      line: "PermitRootLogin no" }
+        - { regexp: "^#?PasswordAuthentication", line: "PasswordAuthentication no" }
+        - { regexp: "^#?X11Forwarding",        line: "X11Forwarding no" }
+        - { regexp: "^#?MaxAuthTries",         line: "MaxAuthTries 3" }
+        - { regexp: "^#?ClientAliveInterval",  line: "ClientAliveInterval 300" }
+        - { regexp: "^#?ClientAliveCountMax",  line: "ClientAliveCountMax 2" }
+      notify: restart sshd
+      tags: [ssh, hardening]
 
-    # ── 8. Nginx reverse proxy ─────────────────────────────────────────────────
-    - name: Remove default Nginx site
-      file:
-        path: /etc/nginx/conf.d/default.conf
-        state: absent
-      notify: restart nginx
- 
-    - name: Configure Nginx reverse proxy
-      template:
-        src: app/nginx_app_conf.j2
-        dest: /etc/nginx/conf.d/fastapi-crud.conf
+    - name: Ensure firewalld is installed and running
+      yum:
+        name: firewalld
+        state: present
+      tags: [firewall]
+
+    - name: Enable firewalld service
+      systemd:
+        name: firewalld
+        enabled: true
+        state: started
+      tags: [firewall]
+
+    - name: Open required firewall ports
+      firewalld:
+        service: "{{ item }}"
+        permanent: true
+        state: enabled
+        immediate: true
+      loop:
+        - ssh
+        - http
+        - https
+      tags: [firewall]
+
+    - name: Download CloudWatch agent RPM
+      get_url:
+        url: "https://s3.{{ aws_region }}.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm"
+        dest: /tmp/amazon-cloudwatch-agent.rpm
         mode: "0644"
-      notify: restart nginx
- 
-    - name: Enable Nginx
+      tags: [monitoring, cloudwatch]
+
+    - name: Install CloudWatch agent
+      yum:
+        name: /tmp/amazon-cloudwatch-agent.rpm
+        state: present
+      tags: [monitoring, cloudwatch]
+
+    - name: Write minimal CloudWatch agent configuration
+      copy:
+        content: |
+          {
+            "agent": {
+              "metrics_collection_interval": 60,
+              "run_as_user": "root"
+            },
+            "metrics": {
+              "namespace": "CWAgent/{{ project_env }}",
+              "metrics_collected": {
+                "cpu":    { "measurement": ["cpu_usage_idle", "cpu_usage_user"], "metrics_collection_interval": 60 },
+                "disk":   { "measurement": ["used_percent"], "resources": ["*"], "metrics_collection_interval": 60 },
+                "mem":    { "measurement": ["mem_used_percent"], "metrics_collection_interval": 60 }
+              }
+            },
+            "logs": {
+              "logs_collected": {
+                "files": {
+                  "collect_list": [
+                    {
+                      "file_path": "/var/log/messages",
+                      "log_group_name":  "/ec2/{{ project_env }}/system",
+                      "log_stream_name": "{instance_id}"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        dest: /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+        mode: "0644"
+      notify: restart cloudwatch agent
+      tags: [monitoring, cloudwatch]
+
+    - name: Enable and start CloudWatch agent
       systemd:
-        name: nginx
+        name: amazon-cloudwatch-agent
         enabled: true
-        state: "{{ 'started' if (start_services | default(true) | bool) else 'stopped' }}"
-        daemon_reload: true
+        state: started
+      tags: [monitoring, cloudwatch]
 
-    # ── 10. Smoke test (live deploy only) ──────────────────────────────────────
-    - name: Wait for FastAPI health endpoint
-      uri:
-        url: "http://localhost:{{ app_port }}/health"
-        return_content: true
-        status_code: 200
-      register: health
-      retries: 12
-      delay: 5
-      until: health.status == 200
-      when: start_services | default(true) | bool
- 
-    - name: Print health check result
-      debug:
-        msg: "Health: {{ health.json }}"
-      when:
-        - start_services | default(true) | bool
-        - health is defined
+    - name: Write /etc/environment-info (project metadata)
+      copy:
+        content: |
+          # Written by Ansible on {{ ansible_date_time.iso8601 }}
+          PROJECT_ENV={{ project_env }}
+          AWS_REGION={{ aws_region }}
+          INSTANCE_ID={{ ansible_ec2_instance_id | default(inventory_hostname) }}
+        dest: /etc/environment-info
+        owner: root
+        group: root
+        mode: "0644"
+      tags: [metadata]
 
-  # ── Handlers ──────────────────────────────────────────────────────────────────
   handlers:
-    - name: reload systemd
+    - name: restart chrony
       systemd:
-        daemon_reload: true
- 
-    - name: restart fastapi
-      systemd:
-        name: fastapi-crud
+        name: chronyd
         state: restarted
-        enabled: true
-        daemon_reload: true
-      when: start_services | default(true) | bool
- 
-    - name: restart nginx
+
+    - name: restart sshd
       systemd:
-        name: nginx
+        name: sshd
         state: restarted
-        enabled: true
-      when: start_services | default(true) | bool
+
+    - name: restart cloudwatch agent
+      systemd:
+        name: amazon-cloudwatch-agent
+        state: restarted

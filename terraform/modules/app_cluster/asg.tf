@@ -15,8 +15,8 @@ resource "aws_launch_template" "app_lt" {
 
 resource "aws_autoscaling_group" "app_asg" {
   name             = "app-asg-${var.env}"
-  desired_capacity = 3
-  max_size         = 5
+  desired_capacity = 2
+  max_size         = 4
   min_size         = 2
 
   vpc_zone_identifier = var.asg_subnet_ids

@@ -22,7 +22,7 @@ on:
       - 'packer/app-ami.pkr.hcl'
 
 env:
-  AWS_REGION:   "eu-central-1"
+  AWS_REGION:   ${{ vars.AWS_REGION }}
   PROJECT_ENV:  ${{ github.event.inputs.environment || 'dev' }}
 
 permissions:
@@ -42,7 +42,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.ACTIONS_ROLE_ARN }}
-          aws-region:            ${{ env.AWS_REGION }}
+          aws-region:     ${{ env.AWS_REGION }}
 
       - name: Setup Packer
         uses: hashicorp/setup-packer@main
